@@ -1,46 +1,43 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { LoginPage } from './components/pages/LoginPage';
-import { RAProfile } from './components/pages/RAProfile';
-import { AdminProfile } from './components/pages/AdminProfile';
+import { Dashboard } from './components/pages/Dashboard';
+import { CalendarView } from './components/pages/CalendarView';
+import { ResearchAssistants } from './components/pages/ResearchAssistants';
+import { StudyShifts } from './components/pages/StudyShifts';
+import { Navbar } from './components/ui/Navbar';
 import { Toaster } from './components/ui/sonner';
-import type { User } from './components/utils/Users'
+
+function MainLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div>
+      <Navbar />
+      <main>{children}</main>
+      <Toaster />
+    </div>
+  );
+}
 
 export default function App() {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [currentPage, setCurrentPage] = useState<'login' | 'profile'>('login');
-
-  const handleLogin = (user: User) => {
-    setCurrentUser(user);
-    setCurrentPage('profile');
-  };
-
-  const handleLogout = () => {
-    setCurrentUser(null);
-    setCurrentPage('login');
-  };
-
-  if (currentPage === 'login') {
-    return (
-      <>
-        <LoginPage onLogin={handleLogin} />
-        <Toaster />
-      </>
-    );
-  }
-
-  if (currentUser?.role === 'ra') {
-    return (
-      <>
-        <RAProfile user={currentUser} onLogout={handleLogout} />
-        <Toaster />
-      </>
-    );
-  }
-
   return (
-    <>
-      <AdminProfile user={currentUser!} onLogout={handleLogout} />
-      <Toaster />
-    </>
+    <Router>
+      <Routes>
+        <Route path="/login" element={<LoginPage onLogin={() => {}} />} />
+        <Route
+          path="/*"
+          element={
+            <MainLayout>
+              <Routes>
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/calendar" element={<CalendarView />} />
+                <Route path="/assistants" element={<ResearchAssistants />} />
+                <Route path="/shifts" element={<StudyShifts />} />
+                <Route path="*" element={<Navigate to="/dashboard" />} />
+              </Routes>
+            </MainLayout>
+          }
+        />
+      </Routes>
+    </Router>
   );
 }
