@@ -178,8 +178,7 @@ export function autoAssignRA(
     time: string;
     duration: number;
     assignedRA?: string;
-  }>,
-  priority: 'low' | 'medium' | 'high' = 'medium'
+  }>
 ): string | null {
   const raConflicts = availableRAs.map(ra => 
     checkScheduleConflict(

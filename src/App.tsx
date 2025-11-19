@@ -6,8 +6,6 @@ import { Toaster } from './components/ui/sonner';
 import type { User } from './components/utils/Users'
 
 
-
-
 export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [currentPage, setCurrentPage] = useState<'login' | 'profile'>('login');

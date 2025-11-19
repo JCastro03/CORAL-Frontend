@@ -78,7 +78,6 @@ export function LoginPage({ onLogin }: LoginPageProps) {
             <span className="text-white font-bold text-xl">C</span>
           </div>
           <h1 className="text-3xl font-semibold text-gray-900">CORAL</h1>
-          <p className="text-gray-600 mt-2">Research Assistant Management System</p>
         </div>
 
         {/* Login Form */}
@@ -96,7 +95,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="your.email@university.edu"
+                  placeholder="ttrojan@usc.edu"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={isLoading}
