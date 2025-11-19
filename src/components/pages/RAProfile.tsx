@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
@@ -7,6 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Calendar, Clock, CheckCircle, XCircle, AlertCircle, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 import type { User } from '../utils/Users';
+import { CalendarView } from './CalendarView';
+import type { EventInput } from '@fullcalendar/core';
 
 interface RAProfileProps {
   user: User;
@@ -83,6 +85,142 @@ const availabilitySlots = [
 
 export function RAProfile({ user, onLogout }: RAProfileProps) {
   const [studies, setStudies] = useState<Study[]>(mockStudies);
+
+  const calendarEvents = useMemo<EventInput[]>(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const studyEvents = studies
+      .filter(study => study.status !== 'declined')
+      .map(study => {
+        const [time, period] = study.time.split(' ');
+        const [hours, minutes] = time.split(':').map(Number);
+        let hour24 = hours;
+        if (period === 'PM' && hours !== 12) hour24 += 12;
+        if (period === 'AM' && hours === 12) hour24 = 0;
+
+        const startDate = new Date(study.date);
+        startDate.setHours(hour24, minutes || 0, 0, 0);
+        
+        const endDate = new Date(startDate);
+        endDate.setHours(endDate.getHours() + study.duration);
+
+        const statusColors: Record<Study['status'], string> = {
+          pending: '#f59e0b', // amber
+          accepted: '#3b82f6', // blue
+          completed: '#10b981', // green
+          declined: '#ef4444'
+        };
+
+        let eventTitle = study.title;
+        if (study.location) {
+          eventTitle += ` @ ${study.location}`;
+        }
+
+        return {
+          id: study.id,
+          title: eventTitle,
+          start: startDate.toISOString(),
+          end: endDate.toISOString(),
+          backgroundColor: statusColors[study.status],
+          borderColor: statusColors[study.status],
+          extendedProps: {
+            location: study.location,
+            status: study.status,
+            description: study.description
+          }
+        };
+      });
+
+    const additionalEvents: EventInput[] = [];
+    
+    const event1Date = new Date(today);
+    event1Date.setDate(today.getDate() + 2);
+    event1Date.setHours(10, 0, 0, 0);
+    additionalEvents.push({
+      id: 'mock-1',
+      title: 'Cognitive Behavior Study',
+      start: event1Date.toISOString(),
+      end: new Date(event1Date.getTime() + 3 * 60 * 60 * 1000).toISOString(),
+      backgroundColor: '#3b82f6',
+      borderColor: '#3b82f6',
+      extendedProps: {
+        location: 'Psychology Lab A',
+        status: 'accepted',
+        description: 'Observational study on decision-making patterns in college students'
+      }
+    });
+
+    const event2Date = new Date(today);
+    event2Date.setDate(today.getDate() + 5);
+    event2Date.setHours(14, 0, 0, 0);
+    additionalEvents.push({
+      id: 'mock-2',
+      title: 'Social Media Usage Research',
+      start: event2Date.toISOString(),
+      end: new Date(event2Date.getTime() + 2 * 60 * 60 * 1000).toISOString(),
+      backgroundColor: '#3b82f6',
+      borderColor: '#3b82f6',
+      extendedProps: {
+        location: 'Research Center B',
+        status: 'accepted',
+        description: 'Survey-based research on social media habits and mental health'
+      }
+    });
+
+    const event3Date = new Date(today);
+    event3Date.setDate(today.getDate() + 7);
+    event3Date.setHours(9, 0, 0, 0);
+    additionalEvents.push({
+      id: 'mock-3',
+      title: 'Memory Formation Study',
+      start: event3Date.toISOString(),
+      end: new Date(event3Date.getTime() + 4 * 60 * 60 * 1000).toISOString(),
+      backgroundColor: '#f59e0b',
+      borderColor: '#f59e0b',
+      extendedProps: {
+        location: 'Neuroscience Lab',
+        status: 'pending',
+        description: 'EEG study examining memory consolidation during sleep'
+      }
+    });
+
+    const event4Date = new Date(today);
+    event4Date.setDate(today.getDate() + 10);
+    event4Date.setHours(11, 0, 0, 0);
+    additionalEvents.push({
+      id: 'mock-4',
+      title: 'Language Processing Research',
+      start: event4Date.toISOString(),
+      end: new Date(event4Date.getTime() + 2.5 * 60 * 60 * 1000).toISOString(),
+      backgroundColor: '#3b82f6',
+      borderColor: '#3b82f6',
+      extendedProps: {
+        location: 'Imaging Center',
+        status: 'accepted',
+        description: 'fMRI study on bilingual language processing'
+      }
+    });
+
+    const event5Date = new Date(today);
+    event5Date.setDate(today.getDate() + 14);
+    event5Date.setHours(13, 30, 0, 0);
+    additionalEvents.push({
+      id: 'mock-5',
+      title: 'Memory Formation Study',
+      start: event5Date.toISOString(),
+      end: new Date(event5Date.getTime() + 4 * 60 * 60 * 1000).toISOString(),
+      backgroundColor: '#10b981',
+      borderColor: '#10b981',
+      extendedProps: {
+        location: 'Neuroscience Lab',
+        status: 'completed',
+        description: 'EEG study examining memory consolidation during sleep'
+      }
+    });
+
+    return [...studyEvents, ...additionalEvents];
+  }, [studies]);
 
   const handleStudyAction = (studyId: string, action: 'accept' | 'decline') => {
     setStudies(prev => prev.map(study => 
@@ -175,6 +313,7 @@ export function RAProfile({ user, onLogout }: RAProfileProps) {
         <Tabs defaultValue="studies" className="space-y-6">
           <TabsList>
             <TabsTrigger value="studies">My Studies</TabsTrigger>
+            <TabsTrigger value="calendar">Calendar</TabsTrigger>
             <TabsTrigger value="availability">Availability</TabsTrigger>
             <TabsTrigger value="hours">Hours Log</TabsTrigger>
           </TabsList>
@@ -239,6 +378,10 @@ export function RAProfile({ user, onLogout }: RAProfileProps) {
                 </Card>
               ))}
             </div>
+          </TabsContent>
+
+          <TabsContent value="calendar">
+            <CalendarView events={calendarEvents} height={600} />
           </TabsContent>
 
           <TabsContent value="availability">

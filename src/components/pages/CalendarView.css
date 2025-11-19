@@ -1,0 +1,328 @@
+.fc {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 1rem;
+  color: oklch(.21 .034 264.665);
+}
+
+.fc-header-toolbar {
+  margin-bottom: 1.5rem;
+}
+
+.fc-toolbar-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: oklch(.21 .034 264.665);
+}
+
+.fc-button {
+  background-color: #fff;
+  border: 1px solid oklch(.928 .006 264.531);
+  color: oklch(.21 .034 264.665);
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: calc(0.625rem - 2px);
+  transition: all 0.15s;
+}
+
+.fc-button:hover {
+  background-color: oklch(.985 .002 247.839);
+  border-color: oklch(.928 .006 264.531);
+}
+
+.fc-button:active {
+  background-color: oklch(.928 .006 264.531);
+}
+
+.fc-button-primary {
+  background-color: #030213 !important;
+  border-color: #030213 !important;
+  color: #fff !important;
+}
+
+.fc-button-primary:hover {
+  background-color: #030213 !important;
+  opacity: 0.9;
+}
+
+.fc-button-active {
+  background-color: #e9ebef !important;
+  border-color: #e9ebef !important;
+  color: #030213 !important;
+}
+
+.fc-button.fc-button-primary {
+  background-color: #030213 !important;
+  border-color: #030213 !important;
+  color: #fff !important;
+}
+
+.fc-button.fc-button-active {
+  background-color: #e9ebef !important;
+  border-color: #e9ebef !important;
+  color: #030213 !important;
+}
+
+.fc-button-group .fc-button {
+  border: none !important;
+}
+
+.fc-button-group .fc-button-active {
+  background-color: #e9ebef !important;
+  border: none !important;
+  color: #030213 !important;
+  font-weight: 600;
+}
+
+.fc-button-group .fc-button:hover {
+  border: none !important;
+}
+
+.fc-daygrid-day {
+  background-color: #fff;
+  border-color: oklch(.928 .006 264.531);
+}
+
+.fc-daygrid-day-top {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: oklch(.21 .034 264.665);
+}
+
+.fc-col-header-cell {
+  background-color: oklch(.985 .002 247.839);
+  border-color: oklch(.928 .006 264.531);
+  padding: 0.75rem 0.5rem;
+}
+
+.fc-col-header-cell-cushion {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: oklch(.21 .034 264.665);
+}
+
+.fc-daygrid-day-number {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: oklch(.21 .034 264.665);
+  padding: 0.5rem;
+}
+
+.fc-day-today {
+  background-color: oklch(.97 .014 254.604);
+}
+
+.fc-event {
+  border-radius: calc(0.625rem - 4px);
+  padding: 2px 4px;
+  border: none;
+  font-size: 0.75rem;
+}
+
+.fc-event-time {
+  display: block !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+}
+
+.fc-event-title {
+  display: block !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.fc-event:hover {
+  opacity: 0.9;
+  z-index: 10;
+}
+
+.fc-daygrid-event .fc-event-time {
+  margin-bottom: 2px;
+}
+
+.fc-timegrid-slot {
+  border-color: oklch(.928 .006 264.531);
+}
+
+.fc-timegrid-col {
+  border-color: oklch(.928 .006 264.531);
+}
+
+.fc-timegrid-axis {
+  color: oklch(.446 .03 256.802);
+  font-size: 0.75rem;
+}
+
+.fc-timeGridDay-view .fc-timegrid-slot-label {
+  font-size: 0.75rem;
+  color: oklch(.446 .03 256.802);
+  font-weight: 500;
+  padding: 0.5rem;
+}
+
+.fc-timeGridDay-view .fc-timegrid-col {
+  background-color: #fff;
+}
+
+.fc-timeGridDay-view {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.fc-timeGridDay-view .fc-view-harness {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.fc-timeGridDay-view .fc-timegrid-slot {
+  border-top-color: oklch(.928 .006 264.531);
+  height: 0.5rem !important;
+  min-height: 0.5rem !important;
+  max-height: 0.5rem !important;
+  line-height: 0.5rem !important;
+}
+
+.fc-timeGridDay-view .fc-timegrid-slot-minor {
+  height: 0.25rem !important;
+  min-height: 0.25rem !important;
+  max-height: 0.25rem !important;
+  line-height: 0.25rem !important;
+}
+
+.fc-timeGridDay-view .fc-timegrid-slot[style] {
+  height: 0.5rem !important;
+  min-height: 0.5rem !important;
+  max-height: 0.5rem !important;
+  line-height: 0.5rem !important;
+}
+
+.fc-timeGridDay-view .fc-timegrid-slot-minor[style] {
+  height: 0.25rem !important;
+  min-height: 0.25rem !important;
+  max-height: 0.25rem !important;
+  line-height: 0.25rem !important;
+}
+
+.fc-timeGridDay-view .fc-timegrid-slot-table {
+  height: auto !important;
+}
+
+.fc-timeGridDay-view .fc-timegrid-slot-lane {
+  height: 0.5rem !important;
+  min-height: 0.5rem !important;
+}
+
+.fc-timeGridDay-view .fc-timegrid-slot-lane.fc-timegrid-slot-minor {
+  height: 0.25rem !important;
+  min-height: 0.25rem !important;
+}
+
+.fc-timeGridDay-view .fc {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.fc-timeGridDay-view .fc-scroller {
+  max-height: calc(100vh - 320px) !important;
+  overflow-y: auto !important;
+}
+
+.fc-timeGridDay-view .fc-timegrid-body {
+  max-height: calc(100vh - 320px);
+}
+
+.fc-timeGridDay-view .fc-view-harness-active > .fc-scroller {
+  max-height: calc(100vh - 320px) !important;
+}
+
+.fc-day-view-container .fc {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.fc-timeGridDay-view .fc-timegrid-slot-minor {
+  border-top-style: dotted;
+  border-top-color: oklch(.928 .006 264.531);
+}
+
+.fc-timeGridDay-view .fc-timegrid-now-indicator-line {
+  border-color: #030213;
+}
+
+.fc-timeGridDay-view .fc-timegrid-now-indicator-arrow {
+  border-color: #030213;
+}
+
+.fc-timeGridDay-view .fc-timegrid-event {
+  border-radius: calc(0.625rem - 4px);
+  padding: 1px 4px;
+  border: none;
+  box-sizing: border-box;
+}
+
+.fc-timeGridDay-view .fc-timegrid-col {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.fc-timeGridDay-view .fc-timegrid-event-harness {
+  margin-top: 2px !important;
+  margin-bottom: 2px !important;
+}
+
+.fc-timeGridDay-view .fc-timegrid-event-harness > .fc-timegrid-event {
+  width: calc(100% - 4px) !important;
+  margin-left: 2px !important;
+  margin-right: 2px !important;
+}
+
+.fc-timeGridDay-view .fc-col-header-cell {
+  background-color: oklch(.985 .002 247.839);
+}
+
+.fc-timeGridDay-view .fc-col-header-cell-cushion {
+  font-size: 1rem;
+  font-weight: 600;
+  color: oklch(.21 .034 264.665);
+}
+
+.fc-timeGridWeek-view .fc-timegrid-slot-label {
+  font-size: 0.75rem;
+  color: oklch(.446 .03 256.802);
+}
+
+.fc-timeGridWeek-view .fc-timegrid-col {
+  background-color: #fff;
+}
+
+.fc-daygrid-day-frame {
+  cursor: pointer;
+}
+
+.fc-daygrid-day-frame:hover {
+  background-color: oklch(.985 .002 247.839);
+}
+
+.fc-event, .fc-event * {
+  pointer-events: auto !important;
+}
+
+.fc-scroller::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.fc-scroller::-webkit-scrollbar-track {
+  background: oklch(.985 .002 247.839);
+}
+
+.fc-scroller::-webkit-scrollbar-thumb {
+  background: oklch(.928 .006 264.531);
+  border-radius: 4px;
+}
+
+.fc-scroller::-webkit-scrollbar-thumb:hover {
+  background: oklch(.551 .027 264.364);
+}
+

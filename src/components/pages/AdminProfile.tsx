@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
@@ -28,6 +28,8 @@ import { toast } from 'sonner@2.0.3';
 import type { User } from '../utils/Users';
 import type { ScheduleConflict } from '../utils/scheduling-utils';
 import { autoAssignRA, checkScheduleConflict } from '../utils/scheduling-utils';
+import { CalendarView } from './CalendarView';
+import type { EventInput } from '@fullcalendar/core';
 
 interface AdminProfileProps {
   user: User;
@@ -102,7 +104,7 @@ const mockStudies: Study[] = [
     id: '1',
     title: 'Cognitive Behavior Study',
     description: 'Observational study on decision-making patterns in college students',
-    date: '2024-01-20',
+    date: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Tomorrow
     time: '10:00 AM',
     duration: 3,
     location: 'Psychology Lab A',
@@ -113,7 +115,7 @@ const mockStudies: Study[] = [
     id: '2',
     title: 'Social Media Impact Research',
     description: 'Long-term study on social media usage and academic performance',
-    date: '2024-01-18',
+    date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 3 days from now
     time: '2:00 PM',
     duration: 2,
     location: 'Research Center B',
@@ -125,7 +127,7 @@ const mockStudies: Study[] = [
     id: '3',
     title: 'Memory Formation Study',
     description: 'EEG study examining memory consolidation during sleep',
-    date: '2024-01-15',
+    date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 5 days from now
     time: '9:00 AM',
     duration: 4,
     location: 'Neuroscience Lab',
@@ -169,6 +171,83 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
   const [hourEntries, setHourEntries] = useState<HourEntry[]>(mockHourEntries);
   const [isCreatingStudy, setIsCreatingStudy] = useState(false);
   const [isCreatingUser, setIsCreatingUser] = useState(false);
+
+  const calendarEvents = useMemo<EventInput[]>(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const studyEvents = studies.map(study => {
+      let hour24: number, minutes: number;
+      
+      if (study.time.includes('AM') || study.time.includes('PM')) {
+        const [time, period] = study.time.split(' ');
+        const [h, m] = time.split(':').map(Number);
+        hour24 = h;
+        if (period === 'PM' && h !== 12) hour24 += 12;
+        if (period === 'AM' && h === 12) hour24 = 0;
+        minutes = m || 0;
+      } else {
+        const [h, m] = study.time.split(':').map(Number);
+        hour24 = h;
+        minutes = m || 0;
+      }
+
+      const startDate = new Date(study.date);
+      startDate.setHours(hour24, minutes, 0, 0);
+      
+      const endDate = new Date(startDate);
+      endDate.setHours(endDate.getHours() + study.duration);
+
+      const statusColors: Record<Study['status'], string> = {
+        open: '#f59e0b',
+        assigned: '#3b82f6',
+        completed: '#10b981'
+      };
+
+      const priorityIntensity: Record<Study['priority'], number> = {
+        low: 0.6,
+        medium: 0.8,
+        high: 1.0
+      };
+
+      const prioritySymbols: Record<Study['priority'], string> = {
+        high: '⚠️',
+        medium: '⚡',
+        low: ''
+      };
+      
+      let eventTitle = '';
+      if (study.priority && prioritySymbols[study.priority]) {
+        eventTitle += prioritySymbols[study.priority] + ' ';
+      }
+      eventTitle += study.title;
+      if (study.assignedRA) {
+        eventTitle += ` - ${study.assignedRA}`;
+      }
+      if (study.location) {
+        eventTitle += ` @ ${study.location}`;
+      }
+
+      return {
+        id: study.id,
+        title: eventTitle,
+        start: startDate.toISOString(),
+        end: endDate.toISOString(),
+        backgroundColor: statusColors[study.status],
+        borderColor: statusColors[study.status],
+        opacity: priorityIntensity[study.priority],
+        extendedProps: {
+          location: study.location,
+          status: study.status,
+          priority: study.priority,
+          assignedRA: study.assignedRA,
+          description: study.description
+        }
+      };
+    });
+
+    return studyEvents;
+  }, [studies]);
   const [newStudy, setNewStudy] = useState({
     title: '',
     description: '',
@@ -205,7 +284,6 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
       priority: newStudy.priority
     };
 
-    // Attempt automatic assignment
     const autoAssignedRA = autoAssignRA(
       newStudy.date,
       newStudy.time,
@@ -272,7 +350,6 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
       return;
     }
 
-    // In production, this would make an API call to create the user
     console.log('Creating user:', newUser);
     
     setNewUser({
@@ -413,6 +490,7 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
         <Tabs defaultValue="studies" className="space-y-6">
           <TabsList>
             <TabsTrigger value="studies">Study Management</TabsTrigger>
+            <TabsTrigger value="calendar">Calendar</TabsTrigger>
             <TabsTrigger value="ras">Research Assistants</TabsTrigger>
             {isFullAdmin && <TabsTrigger value="hours">Hour Approvals</TabsTrigger>}
             {isFullAdmin && <TabsTrigger value="users">User Management</TabsTrigger>}
@@ -702,7 +780,6 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
                                   variant={conflict.reason === 'available' ? 'default' : 'outline'}
                                   onClick={() => {
                                     if (isCurrentlyAssigned) {
-                                      // Unassign
                                       setStudies(prev => prev.map(s => 
                                         s.id === study.id 
                                           ? { ...s, assignedRA: undefined, status: 'open' as Study['status'] }
@@ -741,6 +818,10 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
             </div>
           </TabsContent>
 
+          <TabsContent value="calendar">
+            <CalendarView events={calendarEvents} height={600} />
+          </TabsContent>
+
           <TabsContent value="ras">
             <Card>
               <CardHeader>
@@ -763,7 +844,6 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
                           <div className="text-sm text-gray-600">{ra.email}</div>
                           <div className="text-sm text-gray-500 mt-1">
                             Available: {ra.availability.map(slot => {
-                              // Simplify display: "Monday 9:00 AM - 12:00 PM" -> "Mon 9-12"
                               const parts = slot.split(' ');
                               const day = parts[0].slice(0, 3);
                               const timeRange = parts.slice(1).join(' ').replace(':00 AM', '').replace(':00 PM', 'p').replace(' - ', '-');
