@@ -16,16 +16,18 @@ export interface ScheduleConflict {
 // Parse time string to minutes for easy comparison
 export function timeToMinutes(timeStr: string): number {
   const [time, period] = timeStr.split(' ');
-  const [hours, minutes] = time.split(':').map(Number);
-  let totalMinutes = hours * 60 + minutes;
+  let [hours, minutes] = time.split(':').map(Number);
+  //let totalMinutes = hours * 60 + minutes;
   
   if (period === 'PM' && hours !== 12) {
-    totalMinutes += 12 * 60;
+    //totalMinutes += 12 * 60;
+    hours = 0;
   } else if (period === 'AM' && hours === 12) {
-    totalMinutes = minutes;
+    //totalMinutes = minutes;
+    hours += 12;
   }
   
-  return totalMinutes;
+  return hours * 60 + minutes;
 }
 
 // Convert minutes back to time string

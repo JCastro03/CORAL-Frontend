@@ -7,6 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Calendar, Clock, CheckCircle, XCircle, AlertCircle, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 import type { User } from '../utils/Users';
+import { Input } from '../ui/input';
+import { minutesToTime, timeToMinutes } from '../utils/scheduling-utils';
 
 interface RAProfileProps {
   user: User;
@@ -25,6 +27,22 @@ interface Study {
   hours?: number;
   approved?: boolean;
 }
+
+type TimeRange = {
+  start: string;
+  end: string;
+}
+
+type DayAvailability = {
+  day: string;
+  times: TimeRange[];
+  newStart?: string;
+  newEnd?: string;
+  error?: string;
+}
+
+
+const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
 const mockStudies: Study[] = [
   {
@@ -73,15 +91,17 @@ const mockStudies: Study[] = [
   }
 ];
 
-const availabilitySlots = [
-  { day: 'Monday', times: ['9:00 AM - 12:00 PM', '2:00 PM - 5:00 PM'] },
-  { day: 'Tuesday', times: ['10:00 AM - 1:00 PM'] },
-  { day: 'Wednesday', times: ['9:00 AM - 12:00 PM', '1:00 PM - 4:00 PM'] },
-  { day: 'Thursday', times: ['10:00 AM - 2:00 PM'] },
-  { day: 'Friday', times: ['9:00 AM - 11:00 AM'] }
+const mockAvailabilitySlots = [
+  { day: 'Monday', times: [{start:"9:00 AM", end: "12:00 PM"}, {start:"2:00 PM", end:"5:00 PM"}], error:"Testing Error" },
+  { day: 'Tuesday', times: [{start:"10:00 AM", end: "1:00 PM"}] },
+  { day: 'Wednesday', times: [{start:"9:00 AM", end: "12:00 PM"}, {start:"1:00 PM", end:"4:00 PM"}] },
+  { day: 'Thursday', times: [{start:"10:00 AM", end: "2:00 PM"}] },
+  { day: 'Friday', times: [{start:"9:00 AM", end: "11:00 AM"}] }
 ];
 
 export function RAProfile({ user, onLogout }: RAProfileProps) {
+  const [isUpdatingAvailability, setUpdatingAvailability] = useState(false);
+  const [availabilitySlots, setAvailabilitySlots] = useState<DayAvailability[]>(mockAvailabilitySlots);
   const [studies, setStudies] = useState<Study[]>(mockStudies);
 
   const handleStudyAction = (studyId: string, action: 'accept' | 'decline') => {
@@ -94,6 +114,8 @@ export function RAProfile({ user, onLogout }: RAProfileProps) {
     const study = studies.find(s => s.id === studyId);
     toast.success(`Study "${study?.title}" ${action === 'accept' ? 'accepted' : 'declined'}`);
   };
+
+  // const handleUpdateAvailability = ()
 
   const getStatusBadge = (status: Study['status'], approved?: boolean) => {
     switch (status) {
@@ -120,6 +142,70 @@ export function RAProfile({ user, onLogout }: RAProfileProps) {
   const approvedHours = studies
     .filter(s => s.status === 'completed' && s.hours && s.approved)
     .reduce((sum, s) => sum + (s.hours || 0), 0);
+
+  const updateTime = (dayIndex: number, field: "start" | "end", value: string) => {
+    setAvailabilitySlots(prev => {
+      const updated = [...prev];
+      updated[dayIndex] = {
+        ...updated[dayIndex],
+        [field === "start" ? "newStart" : "newEnd"]: value,
+        error: ""
+      }
+      return updated;
+    });
+  };
+
+  const addSlot = (dayIndex: number) => {
+    setAvailabilitySlots(prev => {
+      const updated = [...prev];
+      
+      const day = updated[dayIndex];
+
+      if(!day.newStart || !day.newEnd) {
+        day.error = "Start Time and End Time is required.";
+        return updated;
+      }
+
+      const newStartMins = timeToMinutes(day.newStart)
+      const newEndMins = timeToMinutes(day.newEnd)
+      
+      console.log(newStartMins)
+      console.log(newEndMins)
+
+      if (newStartMins >= newEndMins) {
+        day.error =  "Start Time must be before End Time.";
+        return updated;
+      }
+
+      day.times = [...day?.times,
+        {
+          start: minutesToTime(newStartMins),
+          end: minutesToTime(newEndMins)
+        }
+      ]
+
+      day.newStart = "";
+      day.newEnd = "";
+      day.error = "";
+
+      updated[dayIndex] = day
+
+      return updated;
+    });
+  };
+
+  const handleDeleteTimeSLot = (dayIndex: number, timeIndex: number) => {
+    setAvailabilitySlots(prev => {
+      const updated = [...prev];
+
+      updated[dayIndex] = {
+        ...updated[dayIndex],
+        times: updated[dayIndex].times.filter((_, i) => i !== timeIndex) 
+      }
+      return updated
+    })
+
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -250,23 +336,101 @@ export function RAProfile({ user, onLogout }: RAProfileProps) {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
+                <div className="space -y-4">
                   {availabilitySlots.map((slot) => (
                     <div key={slot.day} className="flex items-center justify-between py-3 border-b">
                       <div className="font-medium">{slot.day}</div>
-                      <div className="flex gap-2">
+                      <div className="h-8 flex gap-2">
                         {slot.times.map((time, index) => (
                           <Badge key={index} variant="secondary">
-                            {time}
+                            {time.start}-{time.end}
                           </Badge>
                         ))}
                       </div>
                     </div>
                   ))}
                 </div>
-                <Button className="mt-6">Update Availability</Button>
+                <Button 
+                  className="mt-6"
+                  onClick={() => setUpdatingAvailability(true)}
+                >
+                  Update Availability</Button>
               </CardContent>
             </Card>
+            
+            { isUpdatingAvailability && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Update Availability</CardTitle>
+                  <CardDescription>Description for the form.</CardDescription>
+                </CardHeader>
+
+                <CardContent>
+                  <form>
+                    { availabilitySlots.map((slot, dayIndex) => (
+                      <div key={slot.day} className="flex items-center justify-between py-3 border-b">
+                        <div className="font-medium">{slot.day}</div>
+                        {slot.error && (
+                          <span className="text-red-600 text-sm mt-1">{slot.error}</span>
+                        )}
+                        <div className="flex flex-col gap-3">
+                          {slot.times.map((time, timeIndex) => (
+                            <div
+                              key={timeIndex}
+                              className="flex items-center gap-2"
+                            >
+                              <Badge key={timeIndex} variant="secondary" className="h-8 flex items-center">
+                                {time.start}-{time.end}
+                              </Badge>
+
+                              <Button 
+                                size="sm" 
+                                variant="destructive"
+                                onClick={() => handleDeleteTimeSLot(dayIndex, timeIndex)}
+                                className="gap-1"
+                              >
+                                <XCircle className="w-4 h-4" />
+                                Delete
+                              </Button>
+                            </div>  
+                            
+                          ))}
+
+                          <div className="flex items-center justify-between">
+                            <Input 
+                              id="startTime"
+                              type="time"
+                              value={slot.newStart || ''}
+                              onChange={(e) => updateTime(dayIndex, "start", e.target.value)}
+                              className="w-32"
+                            />
+                            <span> - </span>
+                            <Input
+                              id="endTime"
+                              type="time"
+                              value={slot.newEnd || ''}
+                              onChange={(e) => updateTime(dayIndex, "end", e.target.value)}
+                              className="w-32"
+                            />
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => addSlot(dayIndex)}
+                            className="mt-3 text-sm text-blue-600 hover:underline"
+                          >
+                            + Add time slot
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </form>
+                </CardContent>
+
+                
+              </Card>
+            )}
+
           </TabsContent>
 
           <TabsContent value="hours">
