@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { Badge } from '../ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { Calendar, Clock, CheckCircle, XCircle, AlertCircle, LogOut } from 'lucide-react';
+import { Calendar, Clock, CheckCircle, XCircle, AlertCircle, LogOut, PlusCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import type { User } from '../utils/Users';
 import { Input } from '../ui/input';
@@ -41,8 +41,6 @@ type DayAvailability = {
   error?: string;
 }
 
-
-const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
 const mockStudies: Study[] = [
   {
@@ -92,7 +90,7 @@ const mockStudies: Study[] = [
 ];
 
 const mockAvailabilitySlots = [
-  { day: 'Monday', times: [{start:"9:00 AM", end: "12:00 PM"}, {start:"2:00 PM", end:"5:00 PM"}], error:"Testing Error" },
+  { day: 'Monday', times: [{start:"9:00 AM", end: "12:00 PM"}, {start:"2:00 PM", end:"5:00 PM"}] },
   { day: 'Tuesday', times: [{start:"10:00 AM", end: "1:00 PM"}] },
   { day: 'Wednesday', times: [{start:"9:00 AM", end: "12:00 PM"}, {start:"1:00 PM", end:"4:00 PM"}] },
   { day: 'Thursday', times: [{start:"10:00 AM", end: "2:00 PM"}] },
@@ -100,6 +98,7 @@ const mockAvailabilitySlots = [
 ];
 
 export function RAProfile({ user, onLogout }: RAProfileProps) {
+
   const [isUpdatingAvailability, setUpdatingAvailability] = useState(false);
   const [availabilitySlots, setAvailabilitySlots] = useState<DayAvailability[]>(mockAvailabilitySlots);
   const [studies, setStudies] = useState<Study[]>(mockStudies);
@@ -144,6 +143,7 @@ export function RAProfile({ user, onLogout }: RAProfileProps) {
     .reduce((sum, s) => sum + (s.hours || 0), 0);
 
   const updateTime = (dayIndex: number, field: "start" | "end", value: string) => {
+    
     setAvailabilitySlots(prev => {
       const updated = [...prev];
       updated[dayIndex] = {
@@ -156,6 +156,7 @@ export function RAProfile({ user, onLogout }: RAProfileProps) {
   };
 
   const addSlot = (dayIndex: number) => {
+
     setAvailabilitySlots(prev => {
       const updated = [...prev];
       
@@ -177,6 +178,19 @@ export function RAProfile({ user, onLogout }: RAProfileProps) {
         return updated;
       }
 
+      const hasConflict = day?.times.some((slot) => {
+        const slotStart = timeToMinutes(slot.start)
+        const slotEnd = timeToMinutes(slot.end)
+
+        return newStartMins < slotEnd && newEndMins > slotStart;
+
+      })
+
+      if (hasConflict) {
+        day.error = "New timeslot conflicts with exsisting timeslots";
+        return updated
+      }
+      
       day.times = [...day?.times,
         {
           start: minutesToTime(newStartMins),
@@ -205,6 +219,13 @@ export function RAProfile({ user, onLogout }: RAProfileProps) {
       return updated
     })
 
+  }
+
+  const handleUpdateAvailability = () => {
+    setUpdatingAvailability(false)
+    console.log("API call to send updated availability object to DB. ")
+
+    toast.success("Successfully Updated Availability!")
   }
 
   return (
@@ -328,36 +349,39 @@ export function RAProfile({ user, onLogout }: RAProfileProps) {
           </TabsContent>
 
           <TabsContent value="availability">
-            <Card>
-              <CardHeader>
-                <CardTitle>Weekly Availability</CardTitle>
-                <CardDescription>
-                  Your current availability for research study assignments
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space -y-4">
-                  {availabilitySlots.map((slot) => (
-                    <div key={slot.day} className="flex items-center justify-between py-3 border-b">
-                      <div className="font-medium">{slot.day}</div>
-                      <div className="h-8 flex gap-2">
-                        {slot.times.map((time, index) => (
-                          <Badge key={index} variant="secondary">
-                            {time.start}-{time.end}
-                          </Badge>
-                        ))}
+            { !isUpdatingAvailability && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Weekly Availability</CardTitle>
+                  <CardDescription>
+                    Your current availability for research study assignments
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space -y-4">
+                    {availabilitySlots.map((slot) => (
+                      <div key={slot.day} className="flex items-center justify-between py-3 border-b">
+                        <div className="font-medium">{slot.day}</div>
+                        <div className="h-8 flex gap-2">
+                          {slot.times.map((time, index) => (
+                            <Badge key={index} variant="secondary">
+                              {time.start}-{time.end}
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-                <Button 
-                  className="mt-6"
-                  onClick={() => setUpdatingAvailability(true)}
-                >
-                  Update Availability</Button>
-              </CardContent>
-            </Card>
-            
+                    ))}
+                  </div>
+                  <Button 
+                    className="mt-6"
+                    onClick={() => setUpdatingAvailability(true)}
+                  >
+                    Edit
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
             { isUpdatingAvailability && (
               <Card>
                 <CardHeader>
@@ -369,21 +393,27 @@ export function RAProfile({ user, onLogout }: RAProfileProps) {
                   <form>
                     { availabilitySlots.map((slot, dayIndex) => (
                       <div key={slot.day} className="flex items-center justify-between py-3 border-b">
-                        <div className="font-medium">{slot.day}</div>
-                        {slot.error && (
-                          <span className="text-red-600 text-sm mt-1">{slot.error}</span>
-                        )}
+                        
                         <div className="flex flex-col gap-3">
+                          <div className="font-medium">{slot.day}</div>
+                          {slot.error && (
+                            <span className="text-red-600 text-sm mt-1">{slot.error}</span>
+                          )}
+                        </div>
+
+                        <div className="flex flex-col items-end gap-3 w-fit self-end">
+
                           {slot.times.map((time, timeIndex) => (
                             <div
                               key={timeIndex}
-                              className="flex items-center gap-2"
+                              className="flex items-center gap-2 w-fit"
                             >
                               <Badge key={timeIndex} variant="secondary" className="h-8 flex items-center">
                                 {time.start}-{time.end}
                               </Badge>
 
                               <Button 
+                                type="button"
                                 size="sm" 
                                 variant="destructive"
                                 onClick={() => handleDeleteTimeSLot(dayIndex, timeIndex)}
@@ -396,7 +426,7 @@ export function RAProfile({ user, onLogout }: RAProfileProps) {
                             
                           ))}
 
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 w-fit">
                             <Input 
                               id="startTime"
                               type="time"
@@ -414,17 +444,38 @@ export function RAProfile({ user, onLogout }: RAProfileProps) {
                             />
                           </div>
 
-                          <button
+                        
+                          <Button 
                             type="button"
+                            size="sm" 
+                            variant="ghost"
                             onClick={() => addSlot(dayIndex)}
-                            className="mt-3 text-sm text-blue-600 hover:underline"
+                            className="text-blue-600 hover:text-blue-800 self-end"
                           >
-                            + Add time slot
-                          </button>
+                            <PlusCircle className="w-4 h-4" />
+                            Add Time Slot
+                          </Button>
                         </div>
                       </div>
                     ))}
+
                   </form>
+                  <Button 
+                    size = "sm"
+                    variant="ghost"
+                    className="mt-6 text-blue-600 hover:text-blue-800 gap-2"
+                    onClick={()=> handleUpdateAvailability()}
+                  >
+                    Update Availability
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="destructive"
+                    onClick={() => setUpdatingAvailability(false)}
+                    className="gap-1"
+                  >
+                    Cancel
+                  </Button>
                 </CardContent>
 
                 
@@ -471,6 +522,7 @@ export function RAProfile({ user, onLogout }: RAProfileProps) {
                     ))}
                 </div>
               </CardContent>
+
             </Card>
           </TabsContent>
         </Tabs>

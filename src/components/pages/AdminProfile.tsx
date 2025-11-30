@@ -418,42 +418,7 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
               </Button>
             </div>
 
-            {/* Scheduling Summary */}
-            {/* <div className="grid grid-cols-4 gap-4">
-              <Card>
-                <CardContent className="p-4">
-                  <div className="text-2xl font-semibold text-blue-600">
-                    {studies.filter(s => s.status === 'assigned').length}
-                  </div>
-                  <div className="text-sm text-gray-600">Auto-assigned</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="text-2xl font-semibold text-orange-600">
-                    {studies.filter(s => s.status === 'open').length}
-                  </div>
-                  <div className="text-sm text-gray-600">Awaiting Assignment</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="text-2xl font-semibold text-green-600">
-                    {studies.filter(s => s.status === 'completed').length}
-                  </div>
-                  <div className="text-sm text-gray-600">Completed</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="text-2xl font-semibold text-indigo-600">
-                    {Math.round((studies.filter(s => s.status === 'assigned').length / Math.max(studies.length, 1)) * 100)}%
-                  </div>
-                  <div className="text-sm text-gray-600">Assignment Rate</div>
-                </CardContent>
-              </Card>
-            </div> */}
-
+          
             {/* Form to Create a New Study */}
             {isCreatingStudy && (
               <Card>
