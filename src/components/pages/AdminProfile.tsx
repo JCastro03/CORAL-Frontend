@@ -30,34 +30,27 @@ import type { ScheduleConflict } from '../utils/scheduling-utils';
 import { autoAssignRA, checkScheduleConflict } from '../utils/scheduling-utils';
 import { CalendarView } from './CalendarView';
 import type { EventInput } from '@fullcalendar/core';
+import type { Study, ResearchAssistant} from "../utils/interfaces";
 
 interface AdminProfileProps {
   user: User;
   onLogout: () => void;
 }
 
-interface ResearchAssistant {
-  id: string;
-  name: string;
-  email: string;
-  avatar?: string;
-  totalHours: number;
-  pendingHours: number;
-  availability: string[];
-}
 
-interface Study {
-  id: string;
-  title: string;
-  description: string;
-  date: string;
-  time: string;
-  duration: number;
-  location: string;
-  assignedRA?: string;
-  status: 'open' | 'assigned' | 'completed';
-  priority: 'low' | 'medium' | 'high';
-}
+
+// interface Study {
+//   id: string;
+//   title: string;
+//   description: string;
+//   date: string;
+//   time: string;
+//   duration: number;
+//   location: string;
+//   assignedRA?: string;
+//   status: 'open' | 'assigned' | 'completed';
+//   priority: 'low' | 'medium' | 'high';
+// }
 
 interface HourEntry {
   id: string;
@@ -104,36 +97,36 @@ const mockStudies: Study[] = [
     id: '1',
     title: 'Cognitive Behavior Study',
     description: 'Observational study on decision-making patterns in college students',
-    date: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Tomorrow
-    time: '10:00 AM',
-    duration: 3,
+    date: '2025-11-20',
+    startTime: '10:00 AM',
+    endTime: '12:00 PM',
     location: 'Psychology Lab A',
     status: 'open',
-    priority: 'high'
+    // priority: 'high'
   },
   {
     id: '2',
     title: 'Social Media Impact Research',
     description: 'Long-term study on social media usage and academic performance',
-    date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 3 days from now
-    time: '2:00 PM',
-    duration: 2,
+    date: '2025-11-18',
+    startTime: '2:00 PM',
+    endTime: '4:00 PM',
     location: 'Research Center B',
     assignedRA: 'Sarah Chen',
     status: 'assigned',
-    priority: 'medium'
+    //priority: 'medium'
   },
   {
     id: '3',
     title: 'Memory Formation Study',
     description: 'EEG study examining memory consolidation during sleep',
-    date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 5 days from now
-    time: '9:00 AM',
-    duration: 4,
+    date: '2025-11-15',
+    startTime: '9:00 AM',
+    endTime: '12:00 PM',
     location: 'Neuroscience Lab',
     assignedRA: 'Alex Kumar',
     status: 'completed',
-    priority: 'low'
+    //priority: 'low'
   }
 ];
 
@@ -173,60 +166,40 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
   const [isCreatingUser, setIsCreatingUser] = useState(false);
 
   const calendarEvents = useMemo<EventInput[]>(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const studyEvents = studies.map(study => {
+    const parseTime = (timeStr: string, dateStr: string) => {
       let hour24: number, minutes: number;
       
-      if (study.time.includes('AM') || study.time.includes('PM')) {
-        const [time, period] = study.time.split(' ');
+      if (timeStr.includes('AM') || timeStr.includes('PM')) {
+        const [time, period] = timeStr.split(' ');
         const [h, m] = time.split(':').map(Number);
         hour24 = h;
         if (period === 'PM' && h !== 12) hour24 += 12;
         if (period === 'AM' && h === 12) hour24 = 0;
         minutes = m || 0;
       } else {
-        const [h, m] = study.time.split(':').map(Number);
+        const [h, m] = timeStr.split(':').map(Number);
         hour24 = h;
         minutes = m || 0;
       }
 
-      const startDate = new Date(study.date);
-      startDate.setHours(hour24, minutes, 0, 0);
-      
-      const endDate = new Date(startDate);
-      endDate.setHours(endDate.getHours() + study.duration);
+      const date = new Date(dateStr);
+      date.setHours(hour24, minutes, 0, 0);
+      return date;
+    };
 
-      const statusColors: Record<Study['status'], string> = {
-        open: '#f59e0b',
-        assigned: '#3b82f6',
-        completed: '#10b981'
-      };
+    const statusColors: Record<Study['status'], string> = {
+      open: '#f59e0b',
+      assigned: '#3b82f6',
+      completed: '#10b981'
+    };
 
-      const priorityIntensity: Record<Study['priority'], number> = {
-        low: 0.6,
-        medium: 0.8,
-        high: 1.0
-      };
+    return studies.map(study => {
+      const startDate = parseTime(study.startTime, study.date);
+      const endDate = parseTime(study.endTime, study.date);
 
-      const prioritySymbols: Record<Study['priority'], string> = {
-        high: '⚠️',
-        medium: '⚡',
-        low: ''
-      };
-      
-      let eventTitle = '';
-      if (study.priority && prioritySymbols[study.priority]) {
-        eventTitle += prioritySymbols[study.priority] + ' ';
-      }
-      eventTitle += study.title;
-      if (study.assignedRA) {
-        eventTitle += ` - ${study.assignedRA}`;
-      }
-      if (study.location) {
-        eventTitle += ` @ ${study.location}`;
-      }
+      let eventTitle = study.title;
+      if (study.assignedRA) eventTitle += ` - ${study.assignedRA}`;
+      if (study.location) eventTitle += ` @ ${study.location}`;
 
       return {
         id: study.id,
@@ -235,28 +208,28 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
         end: endDate.toISOString(),
         backgroundColor: statusColors[study.status],
         borderColor: statusColors[study.status],
-        opacity: priorityIntensity[study.priority],
         extendedProps: {
           location: study.location,
           status: study.status,
-          priority: study.priority,
           assignedRA: study.assignedRA,
           description: study.description
         }
       };
     });
-
-    return studyEvents;
   }, [studies]);
+
+
+
   const [newStudy, setNewStudy] = useState({
     title: '',
     description: '',
     date: '',
-    time: '',
-    duration: '',
+    startTime: '',
+    endTime: '',
+    assignedRA: '',
     location: '',
-    priority: 'medium' as Study['priority']
   });
+
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
@@ -267,7 +240,7 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
   const handleCreateStudy = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!newStudy.title || !newStudy.date || !newStudy.time || !newStudy.duration) {
+    if (!newStudy.title || !newStudy.date || !newStudy.startTime || !newStudy.endTime || !newStudy.assignedRA) {
       toast.error('Please fill in all required fields');
       return;
     }
@@ -277,70 +250,73 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
       title: newStudy.title,
       description: newStudy.description,
       date: newStudy.date,
-      time: newStudy.time,
-      duration: parseFloat(newStudy.duration),
+      startTime: newStudy.startTime,
+      endTime: newStudy.endTime,
+      assignedRA: newStudy.assignedRA,
       location: newStudy.location,
       status: 'open',
-      priority: newStudy.priority
     };
 
-    const autoAssignedRA = autoAssignRA(
-      newStudy.date,
-      newStudy.time,
-      parseFloat(newStudy.duration),
-      mockRAs,
-      studies.map(s => ({
-        date: s.date,
-        time: s.time,
-        duration: s.duration,
-        assignedRA: s.assignedRA
-      })),
-      newStudy.priority
-    );
+    // const autoAssignedRA = autoAssignRA(
+    //   newStudy.date,
+    //   newStudy.time,
+    //   parseFloat(newStudy.duration),
+    //   mockRAs,
+    //   studies.map(s => ({
+    //     date: s.date,
+    //     time: s.time,
+    //     duration: s.duration,
+    //     assignedRA: s.assignedRA
+    //   })),
+    //   newStudy.priority
+    // );
 
-    if (autoAssignedRA) {
-      study.assignedRA = autoAssignedRA;
-      study.status = 'assigned';
-      setStudies(prev => [study, ...prev]);
-      toast.success(`Study created and automatically assigned to ${autoAssignedRA}`);
-    } else {
-      setStudies(prev => [study, ...prev]);
-      toast('Study created - no RAs available for automatic assignment', {
-        description: 'You can manually assign an RA or check availability conflicts.'
-      });
-    }
+    // if (autoAssignedRA) {
+    //   study.assignedRA = autoAssignedRA;
+    //   study.status = 'assigned';
+    //   setStudies(prev => [study, ...prev]);
+    //   toast.success(`Study created and automatically assigned to ${autoAssignedRA}`);
+    // } else {
+    //   setStudies(prev => [study, ...prev]);
+    //   toast('Study created - no RAs available for automatic assignment', {
+    //     description: 'You can manually assign an RA or check availability conflicts.'
+    //   });
+    // }
+
+    setStudies(prev => [study, ...prev]);
 
     setNewStudy({
       title: '',
       description: '',
       date: '',
-      time: '',
-      duration: '',
+      startTime: '',
+      endTime: '',
+      assignedRA: '',
       location: '',
-      priority: 'medium'
     });
+
     setIsCreatingStudy(false);
   };
 
-  const handleAssignRA = (studyId: string, raName: string) => {
-    setStudies(prev => prev.map(study => 
-      study.id === studyId 
-        ? { ...study, assignedRA: raName, status: 'assigned' as Study['status'] }
-        : study
-    ));
-    toast.success(`Study assigned to ${raName}`);
-  };
+  // const handleAssignRA = (studyId: string, raName: string) => {
+  //   setStudies(prev => prev.map(study => 
+  //     study.id === studyId 
+  //       ? { ...study, assignedRA: raName, status: 'assigned' as Study['status'] }
+  //       : study
+  //   ));
+  //   toast.success(`Study assigned to ${raName}`);
+  // };
 
-  const handleHourApproval = (entryId: string, action: 'approve' | 'reject') => {
-    setHourEntries(prev => prev.map(entry => 
-      entry.id === entryId 
-        ? { ...entry, status: action === 'approve' ? 'approved' : 'rejected' }
-        : entry
-    ));
+  // const handleHourApproval = (entryId: string, action: 'approve' | 'reject') => {
+  //   setHourEntries(prev => prev.map(entry => 
+  //     entry.id === entryId 
+  //       ? { ...entry, status: action === 'approve' ? 'approved' : 'rejected' }
+  //       : entry
+  //   ));
     
-    const entry = hourEntries.find(e => e.id === entryId);
-    toast.success(`Hours ${action === 'approve' ? 'approved' : 'rejected'} for ${entry?.raName}`);
-  };
+  //   const entry = hourEntries.find(e => e.id === entryId);
+  //   toast.success(`Hours ${action === 'approve' ? 'approved' : 'rejected'} for ${entry?.raName}`);
+  // };
 
   const handleCreateUser = (e: React.FormEvent) => {
     e.preventDefault();
@@ -362,63 +338,63 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
     toast.success(`User account created for ${newUser.name}. They will receive login instructions via email.`);
   };
 
-  const getRAAvailabilityStatus = (studyId: string): ScheduleConflict[] => {
-    const study = studies.find(s => s.id === studyId);
-    if (!study) return [];
+  // const getRAAvailabilityStatus = (studyId: string): ScheduleConflict[] => {
+  //   const study = studies.find(s => s.id === studyId);
+  //   if (!study) return [];
 
-    return mockRAs.map(ra => 
-      checkScheduleConflict(
-        study.date,
-        study.time,
-        study.duration,
-        ra.availability,
-        studies.filter(s => s.id !== studyId).map(s => ({
-          date: s.date,
-          time: s.time,
-          duration: s.duration,
-          assignedRA: s.assignedRA
-        })),
-        ra.name
-      )
-    );
-  };
+  //   return mockRAs.map(ra => 
+  //     checkScheduleConflict(
+  //       study.date,
+  //       study.time,
+  //       study.duration,
+  //       ra.availability,
+  //       studies.filter(s => s.id !== studyId).map(s => ({
+  //         date: s.date,
+  //         time: s.time,
+  //         duration: s.duration,
+  //         assignedRA: s.assignedRA
+  //       })),
+  //       ra.name
+  //     )
+  //   );
+  // };
 
-  const handleAutoReassign = (studyId: string) => {
-    const study = studies.find(s => s.id === studyId);
-    if (!study) return;
+  // const handleAutoReassign = (studyId: string) => {
+  //   const study = studies.find(s => s.id === studyId);
+  //   if (!study) return;
 
-    const autoAssignedRA = autoAssignRA(
-      study.date,
-      study.time,
-      study.duration,
-      mockRAs,
-      studies.filter(s => s.id !== studyId).map(s => ({
-        date: s.date,
-        time: s.time,
-        duration: s.duration,
-        assignedRA: s.assignedRA
-      })),
-      study.priority
-    );
+  //   const autoAssignedRA = autoAssignRA(
+  //     study.date,
+  //     study.time,
+  //     study.duration,
+  //     mockRAs,
+  //     studies.filter(s => s.id !== studyId).map(s => ({
+  //       date: s.date,
+  //       time: s.time,
+  //       duration: s.duration,
+  //       assignedRA: s.assignedRA
+  //     })),
+  //     study.priority
+  //   );
 
-    if (autoAssignedRA) {
-      handleAssignRA(studyId, autoAssignedRA);
-      toast.success(`Study automatically reassigned to ${autoAssignedRA}`);
-    } else {
-      toast.error('No RAs available for automatic assignment');
-    }
-  };
+  //   if (autoAssignedRA) {
+  //     handleAssignRA(studyId, autoAssignedRA);
+  //     toast.success(`Study automatically reassigned to ${autoAssignedRA}`);
+  //   } else {
+  //     toast.error('No RAs available for automatic assignment');
+  //   }
+  // };
 
-  const getPriorityBadge = (priority: Study['priority']) => {
-    switch (priority) {
-      case 'high':
-        return <Badge variant="destructive">High Priority</Badge>;
-      case 'medium':
-        return <Badge variant="outline">Medium Priority</Badge>;
-      case 'low':
-        return <Badge variant="secondary">Low Priority</Badge>;
-    }
-  };
+  // const getPriorityBadge = (priority: Study['priority']) => {
+  //   switch (priority) {
+  //     case 'high':
+  //       return <Badge variant="destructive">High Priority</Badge>;
+  //     case 'medium':
+  //       return <Badge variant="outline">Medium Priority</Badge>;
+  //     case 'low':
+  //       return <Badge variant="secondary">Low Priority</Badge>;
+  //   }
+  // };
 
   const getStatusBadge = (status: Study['status']) => {
     switch (status) {
@@ -505,7 +481,7 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
               </Button>
             </div>
 
-            {/* Scheduling Summary */}
+            {/* Scheduling Summary
             <div className="grid grid-cols-4 gap-4">
               <Card>
                 <CardContent className="p-4">
@@ -539,7 +515,7 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
                   <div className="text-sm text-gray-600">Assignment Rate</div>
                 </CardContent>
               </Card>
-            </div>
+            </div> */}
 
             {isCreatingStudy && (
               <Card>
@@ -590,23 +566,21 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="time">Time *</Label>
+                        <Label htmlFor="startTime">Start Time *</Label>
                         <Input
-                          id="time"
+                          id="startTime"
                           type="time"
-                          value={newStudy.time}
-                          onChange={(e) => setNewStudy(prev => ({ ...prev, time: e.target.value }))}
+                          value={newStudy.startTime}
+                          onChange={(e) => setNewStudy(prev => ({ ...prev, startTime: e.target.value }))}
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="duration">Duration (hours) *</Label>
+                        <Label htmlFor="endTime">End Time *</Label>
                         <Input
-                          id="duration"
-                          type="number"
-                          step="0.5"
-                          value={newStudy.duration}
-                          onChange={(e) => setNewStudy(prev => ({ ...prev, duration: e.target.value }))}
-                          placeholder="2.5"
+                          id="endTime"
+                          type="time"
+                          value={newStudy.endTime}
+                          onChange={(e) => setNewStudy(prev => ({ ...prev, endTime: e.target.value }))}
                         />
                       </div>
                     </div>
@@ -614,18 +588,25 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
                     <div className="space-y-2">
                       <Label htmlFor="priority">Priority</Label>
                       <Select 
-                        value={newStudy.priority} 
-                        onValueChange={(value: Study['priority']) => 
-                          setNewStudy(prev => ({ ...prev, priority: value }))
+                        value={newStudy.assignedRA}
+                        onValueChange={(ra : string) =>
+                          setNewStudy(prev => ({ ...prev, assignedRA: ra }))
                         }
+                        
                       >
-                        <SelectTrigger>
-                          <SelectValue />
+                       <SelectTrigger>
+                          <SelectValue placeholder="Select a Research Assistant"/>
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="low">Low Priority</SelectItem>
-                          <SelectItem value="medium">Medium Priority</SelectItem>
-                          <SelectItem value="high">High Priority</SelectItem>
+                          {/* TODO: Handle handle the API call and make a dropdown of possible RA's to assign based on their availability and time of new study */}
+
+                          {mockRAs.map((ra) => (
+                            <SelectItem key={ra.id} value={ra.name}> { ra.name } </SelectItem>
+                          ))}
+
+                          {/* <SelectItem value="ra">Research Assistant</SelectItem>
+                          <SelectItem value="scheduling_admin">Scheduling Administrator</SelectItem>
+                          <SelectItem value="full_admin">Full Administrator</SelectItem> */}
                         </SelectContent>
                       </Select>
                     </div>
@@ -656,7 +637,7 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
                           {study.description}
                         </CardDescription>
                       </div>
-                      <div className="flex gap-2">
+                      {/* <div className="flex gap-2">
                         {getPriorityBadge(study.priority)}
                         {getStatusBadge(study.status)}
                         {study.status === 'assigned' && study.assignedRA && (
@@ -677,7 +658,7 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
                             })()}
                           </>
                         )}
-                      </div>
+                      </div> */}
                     </div>
                   </CardHeader>
                   <CardContent>
@@ -688,7 +669,11 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
                       </div>
                       <div className="flex items-center gap-1">
                         <Clock className="w-4 h-4" />
-                        {study.time} ({study.duration}h)
+                        {study.startTime}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-4 h-4" />
+                        {study.endTime}
                       </div>
                       {study.location && <div>📍 {study.location}</div>}
                       {study.assignedRA && (
@@ -709,7 +694,7 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => handleAutoReassign(study.id)}
+                              // onClick={() => handleAutoReassign(study.id)}
                               className="gap-1"
                             >
                               <Zap className="w-3 h-3" />
@@ -720,7 +705,7 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => handleAutoReassign(study.id)}
+                              // onClick={() => handleAutoReassign(study.id)}
                               className="gap-1"
                             >
                               <RotateCcw className="w-3 h-3" />
@@ -729,7 +714,7 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
                           )}
                         </div>
                         
-                        <div className="grid grid-cols-1 gap-2">
+                        {/* <div className="grid grid-cols-1 gap-2">
                           {getRAAvailabilityStatus(study.id).map((conflict) => {
                             const ra = mockRAs.find(r => r.name === conflict.raName);
                             if (!ra) return null;
@@ -809,7 +794,7 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
                               </div>
                             );
                           })}
-                        </div>
+                        </div> */}
                       </div>
                     )}
                   </CardContent>
@@ -901,7 +886,7 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
                               <>
                                 <Button 
                                   size="sm"
-                                  onClick={() => handleHourApproval(entry.id, 'approve')}
+                                  // onClick={() => handleHourApproval(entry.id, 'approve')}
                                   className="gap-1"
                                 >
                                   <CheckCircle className="w-4 h-4" />
@@ -910,7 +895,7 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
                                 <Button 
                                   size="sm"
                                   variant="outline"
-                                  onClick={() => handleHourApproval(entry.id, 'reject')}
+                                  // onClick={() => handleHourApproval(entry.id, 'reject')}
                                   className="gap-1"
                                 >
                                   <XCircle className="w-4 h-4" />
