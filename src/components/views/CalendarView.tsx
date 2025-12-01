@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -14,19 +14,13 @@ import { Clock, CheckCircle, AlertCircle } from "lucide-react";
 import type { EventInput, EventContentArg, DateClickArg, EventClickArg } from "@fullcalendar/core";
 import { checkScheduleConflict } from "../utils/scheduling-utils";
 import "./CalendarView.css";
-
-interface RA {
-  id: string;
-  name: string;
-  email: string;
-  avatar?: string;
-  availability: string[];
-  totalHours?: number;
-  pendingHours?: number;
-}
+import type { User } from "../utils/Users";
+import type { Study } from "../utils/interfaces";
+import { mockRAs, mockStudies } from '../utils/mock-data';
 
 interface CalendarViewProps {
-  events?: EventInput[];
+  user : User
+  filter: string
   height?: string | number;
   ras?: RA[];
   studies?: Array<{
@@ -39,7 +33,68 @@ interface CalendarViewProps {
   onAssignRA?: (studyId: string, raName: string) => void;
 }
 
-export function CalendarView({ events = [], height = "auto", ras = [], studies = [], onAssignRA }: CalendarViewProps) {
+export function CalendarView({ user , filter , height = "auto" }: CalendarViewProps) {
+
+  const [studies, setStudies] = useState<Study[]>(
+    filter !== "user"
+    ? mockStudies
+    : mockStudies.filter(study => study.assignedRA === user.name)
+  );
+  
+
+  const calendarEvents = useMemo<EventInput[]>(() => {
+    const parseTime = (timeStr: string, dateStr: string) => {
+      let hour24: number, minutes: number;
+      
+      if (timeStr.includes('AM') || timeStr.includes('PM')) {
+        const [time, period] = timeStr.split(' ');
+        const [h, m] = time.split(':').map(Number);
+        hour24 = h;
+        if (period === 'PM' && h !== 12) hour24 += 12;
+        if (period === 'AM' && h === 12) hour24 = 0;
+        minutes = m || 0;
+      } else {
+        const [h, m] = timeStr.split(':').map(Number);
+        hour24 = h;
+        minutes = m || 0;
+      }
+
+      const date = new Date(dateStr);
+      date.setHours(hour24, minutes, 0, 0);
+      return date;
+    };
+  
+    const statusColors: Record<Study['status'], string> = {
+      open: '#f59e0b',
+      assigned: '#3b82f6',
+      completed: '#10b981'
+    };
+  
+    return studies.map(study => {
+      const startDate = parseTime(study.startTime, study.date);
+      const endDate = parseTime(study.endTime, study.date);
+
+      let eventTitle = study.title;
+      if (study.assignedRA) eventTitle += ` - ${study.assignedRA}`;
+      if (study.location) eventTitle += ` @ ${study.location}`;
+
+      return {
+        id: study.id,
+        title: eventTitle,
+        start: startDate.toISOString(),
+        end: endDate.toISOString(),
+        backgroundColor: statusColors[study.status],
+        borderColor: statusColors[study.status],
+        extendedProps: {
+          location: study.location,
+          status: study.status,
+          assignedRA: study.assignedRA,
+          description: study.description
+        }
+      };
+    });
+  }, [studies]);
+
   const calendarRef = useRef<FullCalendar>(null);
   const [selectedEvent, setSelectedEvent] = useState<EventClickArg | null>(null);
   const [availableRAs, setAvailableRAs] = useState<Array<{ ra: RA; conflict: any }>>([]);
@@ -187,7 +242,7 @@ export function CalendarView({ events = [], height = "auto", ras = [], studies =
       calendarApi.off('viewDidMount', updateSlotHeights);
       calendarApi.off('datesSet', updateSlotHeights);
     };
-  }, [events]);
+  }, [calendarEvents]);
 
   useEffect(() => {
     const calendarApi = calendarRef.current?.getApi();
@@ -262,7 +317,7 @@ export function CalendarView({ events = [], height = "auto", ras = [], studies =
       calendarApi.off('eventsSet', updateEventMargins);
       observer.disconnect();
     };
-  }, [events]);
+  }, [calendarEvents]);
 
   const renderEventContent = (eventInfo: EventContentArg) => {
     const { timeText, event, view } = eventInfo;
@@ -542,7 +597,7 @@ export function CalendarView({ events = [], height = "auto", ras = [], studies =
                 right: "dayGridMonth,timeGridWeek,timeGridDay",
               }}
               height={height}
-              events={combinedEvents}
+              events={calendarEvents}
               eventDisplay="block"
               eventContent={renderEventContent}
               eventDidMount={handleEventDidMount}
