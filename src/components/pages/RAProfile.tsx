@@ -219,7 +219,93 @@ export function RAProfile({ user, onLogout }: RAProfileProps) {
       }
     });
 
-    return [...studyEvents, ...additionalEvents];
+    const availabilityEvents: EventInput[] = [];
+    
+    const dayMap: Record<string, number> = {
+      'Sunday': 0,
+      'Monday': 1,
+      'Tuesday': 2,
+      'Wednesday': 3,
+      'Thursday': 4,
+      'Friday': 5,
+      'Saturday': 6
+    };
+
+    const parseTime = (timeStr: string): { hour: number; minute: number } => {
+      const [time, period] = timeStr.trim().split(' ');
+      const [h, m] = time.split(':').map(Number);
+      let hour = h;
+      if (period === 'PM' && h !== 12) hour += 12;
+      if (period === 'AM' && h === 12) hour = 0;
+      return { hour, minute: m || 0 };
+    };
+
+    const parseTimeRange = (range: string): { start: { hour: number; minute: number }; end: { hour: number; minute: number } } => {
+      const [startStr, endStr] = range.split(' - ');
+      return {
+        start: parseTime(startStr),
+        end: parseTime(endStr)
+      };
+    };
+
+    const getNextDateForDay = (dayName: string, fromDate: Date): Date => {
+      const targetDay = dayMap[dayName];
+      const currentDay = fromDate.getDay();
+      let daysUntil = targetDay - currentDay;
+      if (daysUntil < 0) daysUntil += 7;
+      if (daysUntil === 0) {
+        const now = new Date();
+        const eventTime = new Date(fromDate);
+        eventTime.setHours(23, 59, 59);
+        if (eventTime < now) {
+          daysUntil = 7;
+        }
+      }
+      const targetDate = new Date(fromDate);
+      targetDate.setDate(fromDate.getDate() + daysUntil);
+      return targetDate;
+    };
+
+    for (let weekOffset = 0; weekOffset < 8; weekOffset++) {
+      const baseDate = new Date(today);
+      baseDate.setDate(today.getDate() + (weekOffset * 7));
+
+      availabilitySlots.forEach((slot) => {
+        const dayDate = getNextDateForDay(slot.day, baseDate);
+        
+        slot.times.forEach((timeRange, index) => {
+          const { start, end } = parseTimeRange(timeRange);
+          
+          const startDate = new Date(dayDate);
+          startDate.setHours(start.hour, start.minute, 0, 0);
+          
+          const endDate = new Date(dayDate);
+          endDate.setHours(end.hour, end.minute, 0, 0);
+
+          if (endDate <= today) {
+            return;
+          }
+
+          availabilityEvents.push({
+            id: `availability-${slot.day}-${index}-${weekOffset}`,
+            title: 'Available',
+            start: startDate.toISOString(),
+            end: endDate.toISOString(),
+            backgroundColor: '#e5e7eb',
+            borderColor: '#9ca3af',
+            textColor: '#6b7280',
+            classNames: ['availability-slot'],
+            display: 'block',
+            extendedProps: {
+              type: 'availability',
+              day: slot.day
+            }
+          });
+        });
+      });
+    }
+
+    return [...studyEvents, ...additionalEvents, ...availabilityEvents];
   }, [studies]);
 
   const handleStudyAction = (studyId: string, action: 'accept' | 'decline') => {

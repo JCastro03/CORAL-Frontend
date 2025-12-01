@@ -119,6 +119,40 @@
   font-size: 0.75rem;
 }
 
+.fc-dayGridMonth-view .fc-event {
+  padding: 1px 3px;
+  font-size: 0.7rem;
+  line-height: 1.2;
+  margin-bottom: 1px;
+}
+
+.fc-dayGridMonth-view .fc-event-main-frame {
+  padding: 0 !important;
+}
+
+.fc-dayGridMonth-view .fc-event-time {
+  font-size: 0.65rem;
+  margin-bottom: 1px;
+}
+
+.fc-dayGridMonth-view .fc-event-title {
+  font-size: 0.7rem;
+  line-height: 1.2;
+}
+
+.fc-dayGridMonth-view .fc-event-main-frame > div {
+  font-size: 0.7rem;
+  line-height: 1.2;
+}
+
+.fc-dayGridMonth-view .fc-daygrid-day-events {
+  min-height: auto;
+}
+
+.fc-dayGridMonth-view .fc-daygrid-day-frame {
+  min-height: 100px;
+}
+
 .fc-event-time {
   display: block !important;
   white-space: nowrap !important;
@@ -168,11 +202,13 @@
 .fc-timeGridDay-view {
   max-width: 800px;
   margin: 0 auto;
+  overflow: visible !important;
 }
 
 .fc-timeGridDay-view .fc-view-harness {
   max-width: 800px;
   margin: 0 auto;
+  overflow: visible !important;
 }
 
 .fc-timeGridDay-view .fc-timegrid-slot {
@@ -221,19 +257,51 @@
 .fc-timeGridDay-view .fc {
   max-width: 800px;
   margin: 0 auto;
+  overflow: visible !important;
+}
+
+.fc-timeGridDay-view .fc-view {
+  overflow: visible !important;
 }
 
 .fc-timeGridDay-view .fc-scroller {
-  max-height: calc(100vh - 320px) !important;
+  max-height: calc(100vh - 280px) !important;
   overflow-y: auto !important;
+  overflow-x: visible !important;
+}
+
+@media (max-width: 768px) {
+  .fc-timeGridDay-view .fc-scroller {
+    max-height: calc(100vh - 240px) !important;
+  }
+  
+  .fc-timeGridDay-view .fc-view-harness-active > .fc-scroller {
+    max-height: calc(100vh - 240px) !important;
+  }
 }
 
 .fc-timeGridDay-view .fc-timegrid-body {
-  max-height: calc(100vh - 320px);
+  max-height: none !important;
+  overflow: visible !important;
+  min-height: auto !important;
+}
+
+.fc-timeGridDay-view .fc-timegrid-body > table {
+  height: auto !important;
 }
 
 .fc-timeGridDay-view .fc-view-harness-active > .fc-scroller {
-  max-height: calc(100vh - 320px) !important;
+  max-height: calc(100vh - 280px) !important;
+  overflow-y: auto !important;
+  overflow-x: visible !important;
+}
+
+.fc-timeGridDay-view .fc-view-harness {
+  overflow: visible !important;
+}
+
+.fc-timeGridDay-view .fc-view-harness-active {
+  overflow: visible !important;
 }
 
 .fc-day-view-container .fc {
@@ -256,7 +324,7 @@
 
 .fc-timeGridDay-view .fc-timegrid-event {
   border-radius: calc(0.625rem - 4px);
-  padding: 1px 4px;
+  padding: 0 !important;
   border: none;
   box-sizing: border-box;
 }
@@ -269,12 +337,42 @@
 .fc-timeGridDay-view .fc-timegrid-event-harness {
   margin-top: 2px !important;
   margin-bottom: 2px !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
 }
 
 .fc-timeGridDay-view .fc-timegrid-event-harness > .fc-timegrid-event {
+  width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* Allow availability blocks to stack side-by-side naturally */
+/* Availability events fill harness width; FC computes harness placement */
+.fc-timeGridDay-view .fc-timegrid-event-harness > .fc-timegrid-event.availability-slot {
   width: calc(100% - 4px) !important;
   margin-left: 2px !important;
   margin-right: 2px !important;
+}
+
+/* Make background availability width align with event inset to avoid visible edge gap */
+.fc-timeGridDay-view .fc-bg-event {
+  left: 0 !important;
+  right: 0 !important;
+  border-radius: calc(0.625rem - 4px);
+}
+
+.fc-timeGridWeek-view .fc-bg-event {
+  left: 0 !important;
+  right: 0 !important;
+}
+
+/* Match event width inset in week view for consistency */
+.fc-timeGridWeek-view .fc-timegrid-event-harness > .fc-timegrid-event {
+  width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
 }
 
 .fc-timeGridDay-view .fc-col-header-cell {
@@ -326,3 +424,25 @@
   background: oklch(.551 .027 264.364);
 }
 
+.fc-event.availability-slot {
+  opacity: 0.7 !important;
+  font-style: italic;
+  border-style: dashed !important;
+  border-width: 1px !important;
+  background-color: #e5e7eb !important;
+  border-color: #9ca3af !important;
+  z-index: 1 !important;
+}
+
+.fc-event.availability-slot .fc-event-title {
+  font-style: italic;
+  color: #6b7280 !important;
+}
+
+.fc-more-link {
+  display: none !important;
+}
+
+.fc-daygrid-more-link {
+  display: none !important;
+}

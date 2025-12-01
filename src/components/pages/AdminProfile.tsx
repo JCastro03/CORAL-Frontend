@@ -57,6 +57,7 @@ interface Study {
   assignedRA?: string;
   status: 'open' | 'assigned' | 'completed';
   priority: 'low' | 'medium' | 'high';
+  department?: 'marketing' | 'management';
 }
 
 interface HourEntry {
@@ -109,7 +110,20 @@ const mockStudies: Study[] = [
     duration: 3,
     location: 'Psychology Lab A',
     status: 'open',
-    priority: 'high'
+    priority: 'high',
+    department: 'marketing'
+  },
+  {
+    id: '4',
+    title: 'Attention Span Research',
+    description: 'Study on attention patterns and focus duration in digital environments',
+    date: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Tomorrow (same date as study 1)
+    time: '2:30 PM',
+    duration: 2,
+    location: 'Psychology Lab B',
+    status: 'open',
+    priority: 'medium',
+    department: 'management'
   },
   {
     id: '2',
@@ -121,7 +135,8 @@ const mockStudies: Study[] = [
     location: 'Research Center B',
     assignedRA: 'Sarah Chen',
     status: 'assigned',
-    priority: 'medium'
+    priority: 'medium',
+    department: 'marketing'
   },
   {
     id: '3',
@@ -133,7 +148,8 @@ const mockStudies: Study[] = [
     location: 'Neuroscience Lab',
     assignedRA: 'Alex Kumar',
     status: 'completed',
-    priority: 'low'
+    priority: 'low',
+    department: 'management'
   }
 ];
 
@@ -175,7 +191,7 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
   const calendarEvents = useMemo<EventInput[]>(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     const studyEvents = studies.map(study => {
       let hour24: number, minutes: number;
       
@@ -228,6 +244,33 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
         eventTitle += ` @ ${study.location}`;
       }
 
+      const availableRAs: string[] = [];
+      if (!study.assignedRA) {
+        const studyDate = study.date;
+        const studyTime = study.time;
+        const studyDuration = study.duration;
+        
+        mockRAs.forEach(ra => {
+          const conflict = checkScheduleConflict(
+            studyDate,
+            studyTime,
+            studyDuration,
+            ra.availability,
+            studies.map(s => ({
+              date: s.date,
+              time: s.time,
+              duration: s.duration,
+              assignedRA: s.assignedRA
+            })),
+            ra.name
+          );
+          
+          if (conflict.reason === 'available') {
+            availableRAs.push(ra.name);
+          }
+        });
+      }
+
       return {
         id: study.id,
         title: eventTitle,
@@ -241,7 +284,9 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
           status: study.status,
           priority: study.priority,
           assignedRA: study.assignedRA,
-          description: study.description
+          description: study.description,
+          availableRAs: availableRAs,
+          department: study.department
         }
       };
     });
@@ -819,7 +864,19 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
           </TabsContent>
 
           <TabsContent value="calendar">
-            <CalendarView events={calendarEvents} height={600} />
+            <CalendarView 
+              events={calendarEvents} 
+              height={600}
+              ras={mockRAs}
+              studies={studies.map(s => ({
+                id: s.id,
+                date: s.date,
+                time: s.time,
+                duration: s.duration,
+                assignedRA: s.assignedRA
+              }))}
+              onAssignRA={handleAssignRA}
+            />
           </TabsContent>
 
           <TabsContent value="ras">
