@@ -29,6 +29,19 @@ export function StudiesView ({ user }: { user: User }) {
         location: '',
     });
 
+    const handleAssignRA = (index : number, selectedRA: string) => {
+      const studyTitle = studies[index]?.title
+      setStudies(prev => {
+        const updated = [...prev]
+        updated[index] = {
+          ...prev[index],
+          assignedRA: selectedRA
+        }
+        return updated;
+      })
+      toast.success(`Successfully assigned ${selectedRA} to ${studyTitle}`)
+    }
+
 
     const getStatusBadge = (status: Study['status'], approved?: boolean) => {
         switch (status) {
@@ -51,79 +64,78 @@ export function StudiesView ({ user }: { user: User }) {
     return (
         <div>
             <div className="grid gap-4">
-              {studies.map((study) => (
-                <Card key={study.id}>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-lg">{study.title}</CardTitle>
-                        <CardDescription className="mt-1">
-                          {study.description}
-                        </CardDescription>
-                      </div>
-                      <div className="flex gap-2">
-                        {getStatusBadge(study.status)}
-                      </div>
-                    </div>
-                  </CardHeader>
+              {studies.map((study, index) => {
+                const [selectedRA, setSelectedRA] = useState("")
 
-                  <CardContent>
-                    <div className="flex items-center gap-6 text-sm text-gray-600 mb-4">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="w-4 h-4" />
-                        {new Date(study.date).toLocaleDateString()}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
-                        {study.startTime}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
-                        {study.endTime}
-                      </div>
-                      {study.location && <div>📍 {study.location}</div>}
-                      {study.assignedRA && (
-                        <div className="flex items-center gap-1">
-                          <Users className="w-4 h-4" />
-                          {study.assignedRA}
+                return (             
+                  <Card key={study.id}>
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <CardTitle className="text-lg">{study.title}</CardTitle>
+                          <CardDescription className="mt-1">
+                            {study.description}
+                          </CardDescription>
                         </div>
-                      )}
-                    </div>
+                        <div className="flex gap-2">
+                          {getStatusBadge(study.status)}
+                        </div>
+                      </div>
+                    </CardHeader>
 
-                    <div className='flex items-center'>
-                      { !study.assignedRA && (
-                          <form className="space-y-4">
-                            <Select 
-                              value={newStudy.assignedRA}
-                              onChange = {(value) => {
-                                setNewStudy(prev => ({
-                                  ...prev,
-                                  assignedRA: value
-                                }))
-                              }}
-                            >
-                              <div className="flex items-center justify-between">
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select a Research Assistant"/>
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {/* TODO: Handle handle the API call and make a dropdown of possible RA's to assign based on their availability and time of new study */}
-
-                                  {mockRAs.map((ra) => (
-                                    <SelectItem key={ra.id} value={ra.name}> { ra.name } </SelectItem>
-                                  ))}
-                                </SelectContent>
-                                <Button className="gap-2">
-                                  Confirm
-                                </Button>
-                              </div> 
-                            </Select>
-                          </form>
+                    <CardContent>
+                      <div className="flex items-center gap-6 text-sm text-gray-600 mb-4">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="w-4 h-4" />
+                          {new Date(study.date).toLocaleDateString()}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          {study.startTime}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          {study.endTime}
+                        </div>
+                        {study.location && <div>📍 {study.location}</div>}
+                        {study.assignedRA && (
+                          <div className="flex items-center gap-1">
+                            <Users className="w-4 h-4" />
+                            {study.assignedRA}
+                          </div>
                         )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                      </div>
+
+                      <div className='flex items-center'>
+                        { !study.assignedRA && (
+                            <div className="flex items-center gap-2">
+                              <Select 
+                                value={selectedRA}
+                                onValueChange = {setSelectedRA}
+                              >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select a Research Assistant"/>
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {/* TODO: Handle handle the API call and make a dropdown of possible RA's to assign based on their availability and time of new study */}
+                                    {mockRAs.map((ra) => (
+                                      <SelectItem key={ra.id} value={ra.name}> { ra.name } </SelectItem>
+                                    ))}
+
+                                  </SelectContent>
+                              </Select>
+                              <Button 
+                                onClick={() => handleAssignRA(index, selectedRA)}
+                                className="gap-2">
+                                Confirm
+                              </Button> 
+                            </div>
+                          )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })}
             </div>
         </div>
     )

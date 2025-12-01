@@ -44,19 +44,18 @@ export function Profile({ user, onLogout }) {
   const [activeTab, setActiveTab] = useState(tabs[0].value);
 
   const renderTab = (value, user) => {
-    console.log(value)
     switch (value) {
         case "mystudies": return <MyStudiesView user={user} />;
-        case "mycalendar": return <CalendarView user={user} height={600} />
+        case "mycalendar": return <CalendarView user={user} filter="user" height={600} />
         case "hours": return <HoursLogView user={user} />;
-        case "studycalendar": return <CalendarView user={user} height={600} />
+        case "studycalendar": return <CalendarView user={user} filter="full" height={600} />
         case "studiesmanagement": return <StudiesView user={user} />;
         case "reseachassistants": return <ResearchAssistantsView />;
         case "usermanagment": return <UsersView user={user} />
         case "availability" : return < AvailabilityView user={user}/>;
         default: return null;
     }
-    }
+}
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -114,9 +113,3 @@ export function Profile({ user, onLogout }) {
     </div>
   );
 }
-
-// function formatTabName(key) {
-//   return key
-//     .replace(/-/g, " ")
-//     .replace(/\b\w/g, (c) => c.toUpperCase());
-// }

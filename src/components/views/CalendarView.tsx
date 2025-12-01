@@ -12,13 +12,14 @@ import { mockRAs, mockStudies } from '../utils/mock-data';
 
 interface CalendarViewProps {
   user : User
+  filter: string
   height?: string | number;
 }
 
-export function CalendarView({ user , height = "auto" }: CalendarViewProps) {
+export function CalendarView({ user , filter , height = "auto" }: CalendarViewProps) {
 
   const [studies, setStudies] = useState<Study[]>(
-    user.role !== "ra"
+    filter !== "user"
     ? mockStudies
     : mockStudies.filter(study => study.assignedRA === user.name)
   );
