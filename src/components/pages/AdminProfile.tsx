@@ -589,21 +589,8 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
                           onChange={(e) => setNewStudy(prev => ({ ...prev, endTime: e.target.value }))}
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="assignedRA">Assigned RA</Label>
-                          <Select 
-                            value={newStudy.assignedRA}
-                            onValueChange={(ra : string) =>
-                              setNewStudy(prev => ({ ...prev, assignedRA: ra }))
-                            }
-                            
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select a Research Assistant"/>
-                            </SelectTrigger>
-                            <SelectContent>
-                              {/* TODO: Handle handle the API call and make a dropdown of possible RA's to assign based on their availability and time of new study */}
-
+                    </div>
+            
                     <div className="space-y-2">
                       <Label htmlFor="priority">Priority</Label>
                       <Select 
@@ -644,6 +631,7 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
                 </CardContent>
               </Card>
             )}
+            
 
             <div className="grid gap-4">
               {studies.map((study) => (
@@ -816,13 +804,14 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
                             );
                           })}
                         </div> */}
-                      </div>
-                    )} */}
+                      
+                    
                   </CardContent>
                 </Card>
               ))}
             </div>
           </TabsContent>
+
 
           <TabsContent value="calendar">
             <CalendarView events={calendarEvents} height={600} />
