@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -6,13 +6,78 @@ import interactionPlugin from "@fullcalendar/interaction";
 import { Card, CardContent } from "../ui/card";
 import type { EventInput, EventContentArg, DateClickArg } from "@fullcalendar/core";
 import "./CalendarView.css";
+import type { User } from "../utils/Users";
+import type { Study } from "../utils/interfaces";
+import { mockRAs, mockStudies } from '../utils/mock-data';
 
 interface CalendarViewProps {
-  events?: EventInput[];
+  user : User
+  filter: string
   height?: string | number;
 }
 
-export function CalendarView({ events = [], height = "auto" }: CalendarViewProps) {
+export function CalendarView({ user , filter , height = "auto" }: CalendarViewProps) {
+
+  const [studies, setStudies] = useState<Study[]>(
+    filter !== "user"
+    ? mockStudies
+    : mockStudies.filter(study => study.assignedRA === user.name)
+  );
+  
+
+  const calendarEvents = useMemo<EventInput[]>(() => {
+    const parseTime = (timeStr: string, dateStr: string) => {
+      let hour24: number, minutes: number;
+      
+      if (timeStr.includes('AM') || timeStr.includes('PM')) {
+        const [time, period] = timeStr.split(' ');
+        const [h, m] = time.split(':').map(Number);
+        hour24 = h;
+        if (period === 'PM' && h !== 12) hour24 += 12;
+        if (period === 'AM' && h === 12) hour24 = 0;
+        minutes = m || 0;
+      } else {
+        const [h, m] = timeStr.split(':').map(Number);
+        hour24 = h;
+        minutes = m || 0;
+      }
+
+      const date = new Date(dateStr);
+      date.setHours(hour24, minutes, 0, 0);
+      return date;
+    };
+  
+    const statusColors: Record<Study['status'], string> = {
+      open: '#f59e0b',
+      assigned: '#3b82f6',
+      completed: '#10b981'
+    };
+  
+    return studies.map(study => {
+      const startDate = parseTime(study.startTime, study.date);
+      const endDate = parseTime(study.endTime, study.date);
+
+      let eventTitle = study.title;
+      if (study.assignedRA) eventTitle += ` - ${study.assignedRA}`;
+      if (study.location) eventTitle += ` @ ${study.location}`;
+
+      return {
+        id: study.id,
+        title: eventTitle,
+        start: startDate.toISOString(),
+        end: endDate.toISOString(),
+        backgroundColor: statusColors[study.status],
+        borderColor: statusColors[study.status],
+        extendedProps: {
+          location: study.location,
+          status: study.status,
+          assignedRA: study.assignedRA,
+          description: study.description
+        }
+      };
+    });
+  }, [studies]);
+
   const calendarRef = useRef<FullCalendar>(null);
 
   const handleDateClick = (clickInfo: DateClickArg) => {
@@ -87,7 +152,7 @@ export function CalendarView({ events = [], height = "auto" }: CalendarViewProps
       calendarApi.off('viewDidMount', updateSlotHeights);
       calendarApi.off('datesSet', updateSlotHeights);
     };
-  }, [events]);
+  }, [calendarEvents]);
 
   useEffect(() => {
     const calendarApi = calendarRef.current?.getApi();
@@ -173,7 +238,7 @@ export function CalendarView({ events = [], height = "auto" }: CalendarViewProps
       calendarApi.off('eventsSet', updateEventMargins);
       observer.disconnect();
     };
-  }, [events]);
+  }, [calendarEvents]);
 
   const renderEventContent = (eventInfo: EventContentArg) => {
     const { timeText, event, view } = eventInfo;
@@ -229,7 +294,7 @@ export function CalendarView({ events = [], height = "auto" }: CalendarViewProps
                 right: "dayGridMonth,timeGridWeek,timeGridDay",
               }}
               height={height}
-              events={events}
+              events={calendarEvents}
               eventDisplay="block"
               eventContent={renderEventContent}
               eventTimeFormat={{
