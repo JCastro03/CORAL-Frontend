@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
@@ -28,33 +28,29 @@ import { toast } from 'sonner@2.0.3';
 import type { User } from '../utils/Users';
 import type { ScheduleConflict } from '../utils/scheduling-utils';
 import { autoAssignRA, checkScheduleConflict } from '../utils/scheduling-utils';
+import { CalendarView } from './CalendarView';
+import type { EventInput } from '@fullcalendar/core';
+import type { Study, ResearchAssistant} from "../utils/interfaces";
 
 interface AdminProfileProps {
   user: User;
   onLogout: () => void;
 }
 
-interface ResearchAssistant {
-  id: string;
-  name: string;
-  email: string;
-  avatar?: string;
-  totalHours: number;
-  pendingHours: number;
-  availability: string[];
-}
 
-interface Study {
-  id: string;
-  title: string;
-  description: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  location: string;
-  assignedRA?: string;
-  status: 'open' | 'assigned' | 'completed';
-}
+
+// interface Study {
+//   id: string;
+//   title: string;
+//   description: string;
+//   date: string;
+//   time: string;
+//   duration: number;
+//   location: string;
+//   assignedRA?: string;
+//   status: 'open' | 'assigned' | 'completed';
+//   priority: 'low' | 'medium' | 'high';
+// }
 
 interface HourEntry {
   id: string;
@@ -101,34 +97,37 @@ const mockStudies: Study[] = [
     id: '1',
     title: 'Cognitive Behavior Study',
     description: 'Observational study on decision-making patterns in college students',
-    date: '2024-01-20',
+    date: '2025-11-20',
     startTime: '10:00 AM',
     endTime: '12:00 PM',
     location: 'Psychology Lab A',
     assignedRA: 'Sarah Chen',
     status: 'open',
+    // priority: 'high'
   },
   {
     id: '2',
     title: 'Social Media Impact Research',
     description: 'Long-term study on social media usage and academic performance',
-    date: '2024-01-18',
+    date: '2025-11-18',
     startTime: '2:00 PM',
     endTime: '4:00 PM',
     location: 'Research Center B',
     assignedRA: 'Sarah Chen',
     status: 'assigned',
+    //priority: 'medium'
   },
   {
     id: '3',
     title: 'Memory Formation Study',
     description: 'EEG study examining memory consolidation during sleep',
-    date: '2024-01-15',
+    date: '2025-11-15',
     startTime: '9:00 AM',
     endTime: '12:00 PM',
     location: 'Neuroscience Lab',
     assignedRA: 'Sarah Chen',
     status: 'completed',
+    //priority: 'low'
   }
 ];
 
@@ -167,6 +166,62 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
   const [studies, setStudies] = useState<Study[]>([]);
   const [isCreatingStudy, setIsCreatingStudy] = useState(false);
   const [isCreatingUser, setIsCreatingUser] = useState(false);
+
+  const calendarEvents = useMemo<EventInput[]>(() => {
+    const parseTime = (timeStr: string, dateStr: string) => {
+      let hour24: number, minutes: number;
+      
+      if (timeStr.includes('AM') || timeStr.includes('PM')) {
+        const [time, period] = timeStr.split(' ');
+        const [h, m] = time.split(':').map(Number);
+        hour24 = h;
+        if (period === 'PM' && h !== 12) hour24 += 12;
+        if (period === 'AM' && h === 12) hour24 = 0;
+        minutes = m || 0;
+      } else {
+        const [h, m] = timeStr.split(':').map(Number);
+        hour24 = h;
+        minutes = m || 0;
+      }
+
+      const date = new Date(dateStr);
+      date.setHours(hour24, minutes, 0, 0);
+      return date;
+    };
+
+    const statusColors: Record<Study['status'], string> = {
+      open: '#f59e0b',
+      assigned: '#3b82f6',
+      completed: '#10b981'
+    };
+
+    return studies.map(study => {
+      const startDate = parseTime(study.startTime, study.date);
+      const endDate = parseTime(study.endTime, study.date);
+
+      let eventTitle = study.title;
+      if (study.assignedRA) eventTitle += ` - ${study.assignedRA}`;
+      if (study.location) eventTitle += ` @ ${study.location}`;
+
+      return {
+        id: study.id,
+        title: eventTitle,
+        start: startDate.toISOString(),
+        end: endDate.toISOString(),
+        backgroundColor: statusColors[study.status],
+        borderColor: statusColors[study.status],
+        extendedProps: {
+          location: study.location,
+          status: study.status,
+          assignedRA: study.assignedRA,
+          description: study.description
+        }
+      };
+    });
+  }, [studies]);
+
+
+
   const [newStudy, setNewStudy] = useState({
     title: '',
     description: '',
@@ -176,6 +231,7 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
     assignedRA: '',
     location: '',
   });
+
   const [newUser, setNewUser] = useState({
     id: '',
     name: '',
@@ -204,11 +260,10 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
       status: 'open',
     };
 
-    // Attempt automatic assignment
     // const autoAssignedRA = autoAssignRA(
     //   newStudy.date,
-    //   newStudy.startTime,
-    //   newStudy.endTime,
+    //   newStudy.time,
+    //   parseFloat(newStudy.duration),
     //   mockRAs,
     //   studies.map(s => ({
     //     date: s.date,
@@ -216,6 +271,7 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
     //     duration: s.duration,
     //     assignedRA: s.assignedRA
     //   })),
+    //   newStudy.priority
     // );
 
     // if (autoAssignedRA) {
@@ -273,7 +329,6 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
       return;
     }
 
-    // In production, this would make an API call to create the user
     console.log('Creating user:', newUser);
     
     setNewUser({
@@ -297,12 +352,12 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
   //       study.time,
   //       study.duration,
   //       ra.availability,
-  //       // studies.filter(s => s.id !== studyId).map(s => ({
-  //       //   date: s.date,
-  //       //   time: s.time,
-  //       //   duration: s.duration,
-  //       //   assignedRA: s.assignedRA
-  //       // })),
+  //       studies.filter(s => s.id !== studyId).map(s => ({
+  //         date: s.date,
+  //         time: s.time,
+  //         duration: s.duration,
+  //         assignedRA: s.assignedRA
+  //       })),
   //       ra.name
   //     )
   //   );
@@ -323,6 +378,7 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
   //       duration: s.duration,
   //       assignedRA: s.assignedRA
   //     })),
+  //     study.priority
   //   );
 
   //   if (autoAssignedRA) {
@@ -333,6 +389,16 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
   //   }
   // };
 
+  // const getPriorityBadge = (priority: Study['priority']) => {
+  //   switch (priority) {
+  //     case 'high':
+  //       return <Badge variant="destructive">High Priority</Badge>;
+  //     case 'medium':
+  //       return <Badge variant="outline">Medium Priority</Badge>;
+  //     case 'low':
+  //       return <Badge variant="secondary">Low Priority</Badge>;
+  //   }
+  // };
 
   const getStatusBadge = (status: Study['status']) => {
     switch (status) {
@@ -404,6 +470,7 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
         <Tabs defaultValue="studies" className="space-y-6">
           <TabsList>
             <TabsTrigger value="studies">Study Management</TabsTrigger>
+            <TabsTrigger value="calendar">Calendar</TabsTrigger>
             <TabsTrigger value="ras">Research Assistants</TabsTrigger>
             {isFullAdmin && <TabsTrigger value="hours">Hour Approvals</TabsTrigger>}
             {isFullAdmin && <TabsTrigger value="users">User Management</TabsTrigger>}
@@ -420,6 +487,42 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
 
           
             {/* Form to Create a New Study */}
+            {/* Scheduling Summary
+            <div className="grid grid-cols-4 gap-4">
+              <Card>
+                <CardContent className="p-4">
+                  <div className="text-2xl font-semibold text-blue-600">
+                    {studies.filter(s => s.status === 'assigned').length}
+                  </div>
+                  <div className="text-sm text-gray-600">Auto-assigned</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="text-2xl font-semibold text-orange-600">
+                    {studies.filter(s => s.status === 'open').length}
+                  </div>
+                  <div className="text-sm text-gray-600">Awaiting Assignment</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="text-2xl font-semibold text-green-600">
+                    {studies.filter(s => s.status === 'completed').length}
+                  </div>
+                  <div className="text-sm text-gray-600">Completed</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="text-2xl font-semibold text-indigo-600">
+                    {Math.round((studies.filter(s => s.status === 'assigned').length / Math.max(studies.length, 1)) * 100)}%
+                  </div>
+                  <div className="text-sm text-gray-600">Assignment Rate</div>
+                </CardContent>
+              </Card>
+            </div> */}
+
             {isCreatingStudy && (
               <Card>
                 <CardHeader>
@@ -501,16 +604,30 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
                             <SelectContent>
                               {/* TODO: Handle handle the API call and make a dropdown of possible RA's to assign based on their availability and time of new study */}
 
-                              {mockRAs.map((ra) => (
-                                <SelectItem key={ra.id} value={ra.name}> { ra.name } </SelectItem>
-                              ))}
+                    <div className="space-y-2">
+                      <Label htmlFor="priority">Priority</Label>
+                      <Select 
+                        value={newStudy.assignedRA}
+                        onValueChange={(ra : string) =>
+                          setNewStudy(prev => ({ ...prev, assignedRA: ra }))
+                        }
+                        
+                      >
+                       <SelectTrigger>
+                          <SelectValue placeholder="Select a Research Assistant"/>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {/* TODO: Handle handle the API call and make a dropdown of possible RA's to assign based on their availability and time of new study */}
 
-                              {/* <SelectItem value="ra">Research Assistant</SelectItem>
-                              <SelectItem value="scheduling_admin">Scheduling Administrator</SelectItem>
-                              <SelectItem value="full_admin">Full Administrator</SelectItem> */}
-                            </SelectContent>
-                          </Select>
-                      </div>
+                          {mockRAs.map((ra) => (
+                            <SelectItem key={ra.id} value={ra.name}> { ra.name } </SelectItem>
+                          ))}
+
+                          {/* <SelectItem value="ra">Research Assistant</SelectItem>
+                          <SelectItem value="scheduling_admin">Scheduling Administrator</SelectItem>
+                          <SelectItem value="full_admin">Full Administrator</SelectItem> */}
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     <div className="flex gap-2">
@@ -598,7 +715,7 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => handleAutoReassign(study.id)}
+                              // onClick={() => handleAutoReassign(study.id)}
                               className="gap-1"
                             >
                               <Zap className="w-3 h-3" />
@@ -609,7 +726,7 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => handleAutoReassign(study.id)}
+                              // onClick={() => handleAutoReassign(study.id)}
                               className="gap-1"
                             >
                               <RotateCcw className="w-3 h-3" />
@@ -618,7 +735,7 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
                           )}
                         </div>
                         
-                        <div className="grid grid-cols-1 gap-2">
+                        {/* <div className="grid grid-cols-1 gap-2">
                           {getRAAvailabilityStatus(study.id).map((conflict) => {
                             const ra = mockRAs.find(r => r.name === conflict.raName);
                             if (!ra) return null;
@@ -669,7 +786,6 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
                                   variant={conflict.reason === 'available' ? 'default' : 'outline'}
                                   onClick={() => {
                                     if (isCurrentlyAssigned) {
-                                      // Unassign
                                       setStudies(prev => prev.map(s => 
                                         s.id === study.id 
                                           ? { ...s, assignedRA: undefined, status: 'open' as Study['status'] }
@@ -699,13 +815,17 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
                               </div>
                             );
                           })}
-                        </div>
+                        </div> */}
                       </div>
                     )} */}
                   </CardContent>
                 </Card>
               ))}
             </div>
+          </TabsContent>
+
+          <TabsContent value="calendar">
+            <CalendarView events={calendarEvents} height={600} />
           </TabsContent>
 
           <TabsContent value="ras">
@@ -730,7 +850,6 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
                           <div className="text-sm text-gray-600">{ra.email}</div>
                           <div className="text-sm text-gray-500 mt-1">
                             Available: {ra.availability.map(slot => {
-                              // Simplify display: "Monday 9:00 AM - 12:00 PM" -> "Mon 9-12"
                               const parts = slot.split(' ');
                               const day = parts[0].slice(0, 3);
                               const timeRange = parts.slice(1).join(' ').replace(':00 AM', '').replace(':00 PM', 'p').replace(' - ', '-');
@@ -788,7 +907,7 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
                               <>
                                 <Button 
                                   size="sm"
-                                  onClick={() => handleHourApproval(entry.id, 'approve')}
+                                  // onClick={() => handleHourApproval(entry.id, 'approve')}
                                   className="gap-1"
                                 >
                                   <CheckCircle className="w-4 h-4" />
@@ -797,7 +916,7 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
                                 <Button 
                                   size="sm"
                                   variant="outline"
-                                  onClick={() => handleHourApproval(entry.id, 'reject')}
+                                  // onClick={() => handleHourApproval(entry.id, 'reject')}
                                   className="gap-1"
                                 >
                                   <XCircle className="w-4 h-4" />

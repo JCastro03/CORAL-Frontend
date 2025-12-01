@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
@@ -9,24 +9,27 @@ import { toast } from 'sonner';
 import type { User } from '../utils/Users';
 import { Input } from '../ui/input';
 import { minutesToTime, timeToMinutes } from '../utils/scheduling-utils';
+import { CalendarView } from './CalendarView';
+import type { EventInput } from '@fullcalendar/core';
+import type { Study } from "../utils/interfaces";
 
 interface RAProfileProps {
   user: User;
   onLogout: () => void;
 }
 
-interface Study {
-  id: string;
-  title: string;
-  description: string;
-  date: string;
-  time: string;
-  duration: number;
-  location: string;
-  status: 'pending' | 'accepted' | 'declined' | 'completed';
-  hours?: number;
-  approved?: boolean;
-}
+// interface Study {
+//   id: string;
+//   title: string;
+//   description: string;
+//   date: string;
+//   time: string;
+//   duration: number;
+//   location: string;
+//   status: 'pending' | 'accepted' | 'declined' | 'completed';
+//   hours?: number;
+//   approved?: boolean;
+// }
 
 type TimeRange = {
   start: string;
@@ -47,9 +50,9 @@ const mockStudies: Study[] = [
     id: '1',
     title: 'Cognitive Behavior Study',
     description: 'Observational study on decision-making patterns in college students',
-    date: '2024-01-15',
-    time: '10:00 AM',
-    duration: 3,
+    date: '2025-11-15',
+    startTime: '10:00 AM',
+    endTime: '11:00 AM',
     location: 'Psychology Lab A',
     status: 'pending'
   },
@@ -57,34 +60,32 @@ const mockStudies: Study[] = [
     id: '2',
     title: 'Social Media Usage Research',
     description: 'Survey-based research on social media habits and mental health',
-    date: '2024-01-12',
-    time: '2:00 PM',
-    duration: 2,
+    date: '2025-11-12',
+    startTime: '2:00 PM',
+    endTime: '4:00 PM',
     location: 'Research Center B',
-    status: 'accepted'
+    status: 'assigned'
   },
   {
     id: '3',
     title: 'Memory Formation Study',
     description: 'EEG study examining memory consolidation during sleep',
     date: '2024-01-08',
-    time: '9:00 AM',
-    duration: 4,
+    startTime: '9:00 AM',
+    endTime: '11:00 AM',
     location: 'Neuroscience Lab',
     status: 'completed',
-    hours: 4,
     approved: true
   },
   {
     id: '4',
     title: 'Language Processing Research',
     description: 'fMRI study on bilingual language processing',
-    date: '2024-01-05',
-    time: '11:00 AM',
-    duration: 2.5,
+    date: '2025-11-05',
+    startTime: '11:00 AM',
+    endTime: '12:00 PM',
     location: 'Imaging Center',
     status: 'completed',
-    hours: 2.5,
     approved: false
   }
 ];
@@ -103,16 +104,69 @@ export function RAProfile({ user, onLogout }: RAProfileProps) {
   const [availabilitySlots, setAvailabilitySlots] = useState<DayAvailability[]>(mockAvailabilitySlots);
   const [studies, setStudies] = useState<Study[]>(mockStudies);
 
-  const handleStudyAction = (studyId: string, action: 'accept' | 'decline') => {
-    setStudies(prev => prev.map(study => 
-      study.id === studyId 
-        ? { ...study, status: action === 'accept' ? 'accepted' : 'declined' }
-        : study
-    ));
+  const calendarEvents = useMemo<EventInput[]>(() => {
+    const parseTime = (timeStr: string, dateStr: string) => {
+      let hour24: number, minutes: number;
+      
+      if (timeStr.includes('AM') || timeStr.includes('PM')) {
+        const [time, period] = timeStr.split(' ');
+        const [h, m] = time.split(':').map(Number);
+        hour24 = h;
+        if (period === 'PM' && h !== 12) hour24 += 12;
+        if (period === 'AM' && h === 12) hour24 = 0;
+        minutes = m || 0;
+      } else {
+        const [h, m] = timeStr.split(':').map(Number);
+        hour24 = h;
+        minutes = m || 0;
+      }
+
+      const date = new Date(dateStr);
+      date.setHours(hour24, minutes, 0, 0);
+      return date;
+    };
+  
+    const statusColors: Record<Study['status'], string> = {
+      open: '#f59e0b',
+      assigned: '#3b82f6',
+      completed: '#10b981'
+    };
+  
+    return studies.map(study => {
+      const startDate = parseTime(study.startTime, study.date);
+      const endDate = parseTime(study.endTime, study.date);
+
+      let eventTitle = study.title;
+      if (study.assignedRA) eventTitle += ` - ${study.assignedRA}`;
+      if (study.location) eventTitle += ` @ ${study.location}`;
+
+      return {
+        id: study.id,
+        title: eventTitle,
+        start: startDate.toISOString(),
+        end: endDate.toISOString(),
+        backgroundColor: statusColors[study.status],
+        borderColor: statusColors[study.status],
+        extendedProps: {
+          location: study.location,
+          status: study.status,
+          assignedRA: study.assignedRA,
+          description: study.description
+        }
+      };
+    });
+  }, [studies]);
+
+  // const handleStudyAction = (studyId: string, action: 'accept' | 'decline') => {
+  //   setStudies(prev => prev.map(study => 
+  //     study.id === studyId 
+  //       ? { ...study, status: action === 'accept' ? 'accepted' : 'declined' }
+  //       : study
+  //   ));
     
-    const study = studies.find(s => s.id === studyId);
-    toast.success(`Study "${study?.title}" ${action === 'accept' ? 'accepted' : 'declined'}`);
-  };
+  //   const study = studies.find(s => s.id === studyId);
+  //   toast.success(`Study "${study?.title}" ${action === 'accept' ? 'accepted' : 'declined'}`);
+  // };
 
   // const handleUpdateAvailability = ()
 
@@ -120,8 +174,8 @@ export function RAProfile({ user, onLogout }: RAProfileProps) {
     switch (status) {
       case 'pending':
         return <Badge variant="outline" className="text-yellow-600 border-yellow-600">Pending</Badge>;
-      case 'accepted':
-        return <Badge variant="outline" className="text-blue-600 border-blue-600">Accepted</Badge>;
+      case 'assigned':
+        return <Badge variant="outline" className="text-blue-600 border-blue-600">Assigned</Badge>;
       case 'declined':
         return <Badge variant="outline" className="text-red-600 border-red-600">Declined</Badge>;
       case 'completed':
@@ -134,13 +188,13 @@ export function RAProfile({ user, onLogout }: RAProfileProps) {
     }
   };
 
-  const totalHours = studies
-    .filter(s => s.status === 'completed' && s.hours)
-    .reduce((sum, s) => sum + (s.hours || 0), 0);
+  // const totalHours = studies
+  //   .filter(s => s.status === 'completed' && s.hours)
+  //   .reduce((sum, s) => sum + (s.hours || 0), 0);
 
-  const approvedHours = studies
-    .filter(s => s.status === 'completed' && s.hours && s.approved)
-    .reduce((sum, s) => sum + (s.hours || 0), 0);
+  // const approvedHours = studies
+  //   .filter(s => s.status === 'completed' && s.hours && s.approved)
+  //   .reduce((sum, s) => sum + (s.hours || 0), 0);
 
   const updateTime = (dayIndex: number, field: "start" | "end", value: string) => {
     
@@ -260,20 +314,20 @@ export function RAProfile({ user, onLogout }: RAProfileProps) {
             <h2 className="text-2xl font-semibold mb-2">{user.name}</h2>
             <p className="text-gray-600 mb-4">{user.email}</p>
             <div className="flex gap-4">
-              <div className="text-center">
+              {/* <div className="text-center">
                 <div className="text-2xl font-semibold text-indigo-600">{totalHours}</div>
                 <div className="text-sm text-gray-600">Total Hours</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-semibold text-green-600">{approvedHours}</div>
                 <div className="text-sm text-gray-600">Approved Hours</div>
-              </div>
-              <div className="text-center">
+              </div> */}
+              {/* <div className="text-center">
                 <div className="text-2xl font-semibold text-blue-600">
                   {studies.filter(s => s.status === 'accepted').length}
                 </div>
                 <div className="text-sm text-gray-600">Active Studies</div>
-              </div>
+              </div> */}
             </div>
           </div>
         </div>
@@ -282,6 +336,7 @@ export function RAProfile({ user, onLogout }: RAProfileProps) {
         <Tabs defaultValue="studies" className="space-y-6">
           <TabsList>
             <TabsTrigger value="studies">My Studies</TabsTrigger>
+            <TabsTrigger value="calendar">Calendar</TabsTrigger>
             <TabsTrigger value="availability">Availability</TabsTrigger>
             <TabsTrigger value="hours">Hours Log</TabsTrigger>
           </TabsList>
@@ -309,7 +364,7 @@ export function RAProfile({ user, onLogout }: RAProfileProps) {
                       </div>
                       <div className="flex items-center gap-1">
                         <Clock className="w-4 h-4" />
-                        {study.time} ({study.duration}h)
+                        {study.startTime} - {study.endTime}
                       </div>
                       <div>📍 {study.location}</div>
                     </div>
@@ -339,13 +394,17 @@ export function RAProfile({ user, onLogout }: RAProfileProps) {
                     {study.status === 'completed' && study.approved === false && (
                       <div className="flex items-center gap-2 text-sm text-orange-600">
                         <AlertCircle className="w-4 h-4" />
-                        Hours logged ({study.hours}h) - Awaiting admin approval
+                        {/* Hours logged ({study.hours}h) - Awaiting admin approval */}
                       </div>
                     )}
                   </CardContent>
                 </Card>
               ))}
             </div>
+          </TabsContent>
+
+          <TabsContent value="calendar">
+            <CalendarView events={calendarEvents} height={600} />
           </TabsContent>
 
           <TabsContent value="availability">
@@ -506,7 +565,7 @@ export function RAProfile({ user, onLogout }: RAProfileProps) {
                         </div>
                         <div className="flex items-center gap-4">
                           <div className="text-right">
-                            <div className="font-medium">{study.hours}h</div>
+                            {/* <div className="font-medium">{study.hours}h</div> */}
                           </div>
                           {study.approved ? (
                             <Badge variant="outline" className="text-green-600 border-green-600">
