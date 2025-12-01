@@ -101,6 +101,7 @@ const mockStudies: Study[] = [
     startTime: '10:00 AM',
     endTime: '12:00 PM',
     location: 'Psychology Lab A',
+    assignedRA: 'Sarah Chen',
     status: 'open',
     // priority: 'high'
   },
@@ -124,7 +125,7 @@ const mockStudies: Study[] = [
     startTime: '9:00 AM',
     endTime: '12:00 PM',
     location: 'Neuroscience Lab',
-    assignedRA: 'Alex Kumar',
+    assignedRA: 'Sarah Chen',
     status: 'completed',
     //priority: 'low'
   }
@@ -160,8 +161,9 @@ const mockHourEntries: HourEntry[] = [
 ];
 
 export function AdminProfile({ user, onLogout }: AdminProfileProps) {
-  const [studies, setStudies] = useState<Study[]>(mockStudies);
+  // const [studies, setStudies] = useState<Study[]>(mockStudies);
   const [hourEntries, setHourEntries] = useState<HourEntry[]>(mockHourEntries);
+  const [studies, setStudies] = useState<Study[]>([]);
   const [isCreatingStudy, setIsCreatingStudy] = useState(false);
   const [isCreatingUser, setIsCreatingUser] = useState(false);
 
@@ -231,6 +233,7 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
   });
 
   const [newUser, setNewUser] = useState({
+    id: '',
     name: '',
     email: '',
     role: 'ra' as 'ra' | 'scheduling_admin' | 'full_admin',
@@ -329,6 +332,7 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
     console.log('Creating user:', newUser);
     
     setNewUser({
+      id: '',
       name: '',
       email: '',
       role: 'ra',
@@ -481,6 +485,8 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
               </Button>
             </div>
 
+          
+            {/* Form to Create a New Study */}
             {/* Scheduling Summary
             <div className="grid grid-cols-4 gap-4">
               <Card>
@@ -583,7 +589,20 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
                           onChange={(e) => setNewStudy(prev => ({ ...prev, endTime: e.target.value }))}
                         />
                       </div>
-                    </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="assignedRA">Assigned RA</Label>
+                          <Select 
+                            value={newStudy.assignedRA}
+                            onValueChange={(ra : string) =>
+                              setNewStudy(prev => ({ ...prev, assignedRA: ra }))
+                            }
+                            
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a Research Assistant"/>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {/* TODO: Handle handle the API call and make a dropdown of possible RA's to assign based on their availability and time of new study */}
 
                     <div className="space-y-2">
                       <Label htmlFor="priority">Priority</Label>
@@ -637,8 +656,7 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
                           {study.description}
                         </CardDescription>
                       </div>
-                      {/* <div className="flex gap-2">
-                        {getPriorityBadge(study.priority)}
+                      <div className="flex gap-2">
                         {getStatusBadge(study.status)}
                         {study.status === 'assigned' && study.assignedRA && (
                           <>
@@ -646,7 +664,8 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
                               <Zap className="w-3 h-3 mr-1" />
                               Auto-assigned
                             </Badge>
-                            {(() => {
+
+                            {/* {(() => {
                               const conflicts = getRAAvailabilityStatus(study.id);
                               const assignedRAConflict = conflicts.find(c => c.raName === study.assignedRA);
                               return assignedRAConflict && assignedRAConflict.reason !== 'available' ? (
@@ -655,12 +674,14 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
                                   Conflict
                                 </Badge>
                               ) : null;
-                            })()}
+                            })()} */}
+
                           </>
                         )}
-                      </div> */}
+                      </div>
                     </div>
                   </CardHeader>
+
                   <CardContent>
                     <div className="flex items-center gap-6 text-sm text-gray-600 mb-4">
                       <div className="flex items-center gap-1">
@@ -684,7 +705,7 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
                       )}
                     </div>
                     
-                    {(study.status === 'open' || study.status === 'assigned') && (
+                    {/* {(study.status === 'open' || study.status === 'assigned') && (
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
                           <Label className="text-sm">
@@ -796,7 +817,7 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
                           })}
                         </div> */}
                       </div>
-                    )}
+                    )} */}
                   </CardContent>
                 </Card>
               ))}
@@ -966,7 +987,7 @@ export function AdminProfile({ user, onLogout }: AdminProfileProps) {
                               type="email"
                               value={newUser.email}
                               onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
-                              placeholder="user@university.edu"
+                              placeholder="ttrojan@usc.edu"
                             />
                           </div>
                         </div>
