@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import type { User } from '../utils/Users';
 import { Input } from '../ui/input';
 import { minutesToTime, timeToMinutes } from '../utils/scheduling-utils';
-import { CalendarView } from './CalendarView';
+import { CalendarView } from '../views/CalendarView';
 import type { EventInput } from '@fullcalendar/core';
 import type { Study } from "../utils/interfaces";
 
@@ -17,19 +17,6 @@ interface RAProfileProps {
   user: User;
   onLogout: () => void;
 }
-
-// interface Study {
-//   id: string;
-//   title: string;
-//   description: string;
-//   date: string;
-//   time: string;
-//   duration: number;
-//   location: string;
-//   status: 'pending' | 'accepted' | 'declined' | 'completed';
-//   hours?: number;
-//   approved?: boolean;
-// }
 
 type TimeRange = {
   start: string;
