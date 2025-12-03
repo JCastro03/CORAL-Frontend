@@ -9,6 +9,32 @@ import "./CalendarView.css";
 import type { User } from "../utils/Users";
 import type { Study } from "../utils/interfaces";
 import { mockRAs, mockStudies } from '../utils/mock-data';
+import { toast } from "sonner";
+
+type SonaSchedule = {
+  experimentId: number;
+  studyName: string;
+  timeslotId: number;
+  timeslotDate: string;
+  durationMinutes: number;
+  location: string;
+  numSignedUp: number;
+  numStudents: number;
+  researcherId: number;
+  surveyFlag: number;
+  webFlag: number;
+  videoconfFlag: number;
+  videoconfUrl: string | null;
+  timeline: {
+    timeslot_date: string;
+  };
+};
+
+const formatDateParam = (date: Date) => date.toISOString().split("T")[0];
+const formatTime = (date: Date) =>
+  date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+const addMinutes = (date: Date, minutes: number) =>
+  new Date(date.getTime() + minutes * 60000);
 
 interface CalendarViewProps {
   user : User
@@ -18,11 +44,8 @@ interface CalendarViewProps {
 
 export function CalendarView({ user , filter , height = "auto" }: CalendarViewProps) {
 
-  const [studies, setStudies] = useState<Study[]>(
-    filter !== "user"
-    ? mockStudies
-    : mockStudies.filter(study => study.assignedRA === user.name)
-  );
+  const [studies, setStudies] = useState<Study[]>([]);
+  const [calendarRange, setCalendarRange] = useState<{ start: string; end: string } | null>(null);
   
 
   const calendarEvents = useMemo<EventInput[]>(() => {
@@ -86,6 +109,83 @@ export function CalendarView({ user , filter , height = "auto" }: CalendarViewPr
       calendarApi.changeView('timeGridDay', clickInfo.dateStr);
     }
   };
+
+  const handleDatesSet = (arg: { startStr: string; endStr: string }) => {
+    setCalendarRange({ start: arg.startStr, end: arg.endStr });
+  };
+
+  useEffect(() => {
+    if (!calendarRange) return;
+
+    const fetchSonaSchedules = async () => {
+      const startDate = new Date(calendarRange.start);
+      const endDate = new Date(calendarRange.end);
+
+      const startParam = formatDateParam(startDate);
+      const endParam = formatDateParam(endDate);
+      const url = `http://127.0.0.1:8000/api/studies/sona-schedules/?start_date=${startParam}&end_date=${endParam}`;
+
+      try {
+        const response = await fetch(url);
+
+        if (!response.ok) {
+          throw new Error(`Request failed with status ${response.status}`);
+        }
+
+        const raw = await response.json();
+        const data: SonaSchedule[] = Array.isArray(raw)
+          ? raw
+          : (raw?.results as SonaSchedule[]) ||
+            (raw?.data as SonaSchedule[]) ||
+            [];
+
+        const mappedStudies: Study[] = data.map((slot) => {
+          const timeslotDate = slot.timeslotDate || (slot as any).timeslot_date || slot.timeline?.timeslot_date;
+          const start = timeslotDate ? new Date(timeslotDate) : new Date();
+          const end = addMinutes(start, slot.durationMinutes || 60);
+
+          return {
+            id: `${slot.experimentId}-${slot.timeslotId}`,
+            title: slot.studyName || "SONA Study",
+            description: `Timeslot ${slot.timeslotId}`,
+            date: timeslotDate || slot.timeslotDate,
+            startTime: formatTime(start),
+            endTime: formatTime(end),
+            location: slot.location || "TBD",
+            assignedRA: "",
+            status: "open",
+            experimentId: slot.experimentId,
+            timeslotId: slot.timeslotId,
+            durationMinutes: slot.durationMinutes ?? 0,
+            numSignedUp: slot.numSignedUp,
+            numStudents: slot.numStudents,
+            surveyFlag: slot.surveyFlag,
+            webFlag: slot.webFlag,
+            videoconfFlag: slot.videoconfFlag,
+            videoconfUrl: slot.videoconfUrl,
+            timelineDate: slot.timeline?.timeslot_date,
+          };
+        });
+
+        const filteredStudies =
+          filter === "user"
+            ? mappedStudies.filter((study) => study.assignedRA === user.name)
+            : mappedStudies;
+
+        setStudies(filteredStudies);
+      } catch (error) {
+        console.error("Failed to load SONA schedules", error);
+        toast.error("Unable to load SONA schedules right now.");
+        const fallback =
+          filter === "user"
+            ? mockStudies.filter((study) => study.assignedRA === user.name)
+            : mockStudies;
+        setStudies(fallback);
+      }
+    };
+
+    fetchSonaSchedules();
+  }, [calendarRange, filter, user.name]);
 
   useEffect(() => {
     const calendarApi = calendarRef.current?.getApi();
@@ -309,6 +409,7 @@ export function CalendarView({ user , filter , height = "auto" }: CalendarViewPr
               displayEventTime={true}
               displayEventEnd={true}
               dateClick={handleDateClick}
+              datesSet={handleDatesSet}
               selectable={false}
               dayMaxEvents={true}
             />

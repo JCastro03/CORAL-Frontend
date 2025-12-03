@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
@@ -22,9 +22,7 @@ import {
   UserPlus,
   Mail,
   Zap,
-  RotateCcw,
-  MapPin,
-  Link
+  RotateCcw
 } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 import type { User } from '../utils/Users';
@@ -35,32 +33,10 @@ import type { EventInput } from '@fullcalendar/core';
 import type { Study, ResearchAssistant} from "../utils/interfaces";
 import { mockRAs, mockStudies } from '../utils/mock-data';
 
-type SonaSchedule = {
-  experimentId: number;
-  studyName: string;
-  timeslotId: number;
-  timeslotDate: string;
-  durationMinutes: number;
-  location: string;
-  numSignedUp: number;
-  numStudents: number;
-  researcherId: number;
-  surveyFlag: number;
-  webFlag: number;
-  videoconfFlag: number;
-  videoconfUrl: string | null;
-  timeline: {
-    timeslot_date: string;
-  };
-};
-
-const formatDate = (date: Date) => date.toISOString().split('T')[0];
-const formatDateTime = (iso: string) => new Date(iso).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
 
 export function UsersView ({ user }: { user: User }) {
     const [isCreatingUser, setIsCreatingUser] = useState(false);
     const [ras, setRas] = useState<ResearchAssistant[]>(mockRAs)
-    const [sonaSchedules, setSonaSchedules] = useState<SonaSchedule[]>([]);
     const [newUser, setNewUser] = useState({
         id: '',
         name: '',
@@ -68,34 +44,6 @@ export function UsersView ({ user }: { user: User }) {
         role: 'ra' as 'ra' | 'scheduling_admin' | 'full_admin',
         tempPassword: ''
     });
-
-    useEffect(() => {
-      const fetchSonaSchedules = async () => {
-        const today = new Date();
-        const endDate = new Date();
-        endDate.setDate(today.getDate() + 21);
-
-        const startParam = formatDate(today);
-        const endParam = formatDate(endDate);
-        const url = `http://127.0.0.1:8000/api/studies/sona-schedules/?start_date=${startParam}&end_date=${endParam}`;
-
-        try {
-          const response = await fetch(url);
-
-          if (!response.ok) {
-            throw new Error(`Request failed with status ${response.status}`);
-          }
-
-          const data: SonaSchedule[] = await response.json();
-          setSonaSchedules(data);
-        } catch (error) {
-          console.error('Failed to load SONA schedules', error);
-          toast.error('Unable to load SONA schedules right now.');
-        }
-      };
-
-      fetchSonaSchedules();
-    }, []);
 
     const handleCreateUser = (e: React.FormEvent) => {
         e.preventDefault();
@@ -266,69 +214,6 @@ export function UsersView ({ user }: { user: User }) {
                         </div>
                       ))}
                     </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>SONA Schedules (Next 3 Weeks)</CardTitle>
-                    <CardDescription>
-                      Live pull from SONA for the next 21 days
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {sonaSchedules.length === 0 ? (
-                      <div className="text-sm text-gray-600">
-                        No schedules returned for the selected window yet.
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {sonaSchedules.map((slot) => (
-                          <div
-                            key={`${slot.experimentId}-${slot.timeslotId}`}
-                            className="border rounded-lg p-4 flex flex-col gap-2"
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <Calendar className="w-4 h-4 text-indigo-600" />
-                                <div className="font-semibold">{slot.studyName}</div>
-                              </div>
-                              <Badge variant="outline">{formatDateTime(slot.timeslotDate)}</Badge>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-3 text-sm text-gray-700">
-                              <div className="flex items-center gap-1">
-                                <Clock className="w-4 h-4 text-gray-500" />
-                                <span>{slot.durationMinutes} min</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <MapPin className="w-4 h-4 text-gray-500" />
-                                <span>{slot.location || 'TBD'}</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Users className="w-4 h-4 text-gray-500" />
-                                <span>{slot.numSignedUp}/{slot.numStudents} signed up</span>
-                              </div>
-                              {slot.videoconfFlag === 1 && slot.videoconfUrl && (
-                                <div className="flex items-center gap-1">
-                                  <Link className="w-4 h-4 text-gray-500" />
-                                  <a
-                                    href={slot.videoconfUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="text-indigo-600 hover:underline"
-                                  >
-                                    Join link
-                                  </a>
-                                </div>
-                              )}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              Timeslot ID: {slot.timeslotId} • Experiment ID: {slot.experimentId}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
                   </CardContent>
                 </Card>
               </div>
