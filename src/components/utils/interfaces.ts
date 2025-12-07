@@ -21,6 +21,7 @@ export interface Study {
   videoconfFlag?: number;
   videoconfUrl?: string | null;
   timelineDate?: string;
+  site?: string;
 }
 
 export interface ResearchAssistant {

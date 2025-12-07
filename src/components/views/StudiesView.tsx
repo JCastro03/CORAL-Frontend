@@ -24,6 +24,7 @@ type SonaSchedule = {
   webFlag: number;
   videoconfFlag: number;
   videoconfUrl: string | null;
+  site?: string;
   timeline: {
     timeslot_date: string;
   };
@@ -79,6 +80,7 @@ export function StudiesView ({ user }: { user: User }) {
               location: slot.location || 'TBD',
               assignedRA: '',
               status: 'open',
+              site: slot.site,
               experimentId: slot.experimentId,
               timeslotId: slot.timeslotId,
               durationMinutes: slot.durationMinutes ?? 0,
@@ -137,6 +139,12 @@ export function StudiesView ({ user }: { user: User }) {
         }
     };
 
+    const getSiteBadgeClass = (site?: string) => {
+      if (site === 'mor') return 'bg-indigo-100 text-indigo-800 border-indigo-200';
+      if (site === 'mkt') return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+      return 'bg-gray-100 text-gray-800 border-gray-200';
+    };
+
     return (
         <div>
             <div className="grid gap-4">
@@ -160,7 +168,12 @@ export function StudiesView ({ user }: { user: User }) {
                             {study.description}
                           </CardDescription>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 items-start">
+                          {study.site && (
+                            <Badge variant="outline" className={getSiteBadgeClass(study.site)}>
+                              {study.site.toUpperCase()}
+                            </Badge>
+                          )}
                           {getStatusBadge(study.status)}
                         </div>
                       </div>

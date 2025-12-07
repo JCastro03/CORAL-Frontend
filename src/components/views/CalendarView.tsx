@@ -25,6 +25,7 @@ type SonaSchedule = {
   webFlag: number;
   videoconfFlag: number;
   videoconfUrl: string | null;
+  site?: string;
   timeline: {
     timeslot_date: string;
   };
@@ -154,6 +155,7 @@ export function CalendarView({ user , filter , height = "auto" }: CalendarViewPr
             location: slot.location || "TBD",
             assignedRA: "",
             status: "open",
+            site: slot.site,
             experimentId: slot.experimentId,
             timeslotId: slot.timeslotId,
             durationMinutes: slot.durationMinutes ?? 0,
