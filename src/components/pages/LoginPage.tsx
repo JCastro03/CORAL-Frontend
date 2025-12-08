@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { toast } from 'sonner';
 import type { User } from '../utils/Users';
 import { Eye, EyeOff } from 'lucide-react';
+import { useNavigate } from "react-router-dom";
 
 interface LoginPageProps {
   onLogin: (user: User) => void;
@@ -16,21 +17,22 @@ const mockUsers: User[] = [
   {
     id: '1',
     name: 'Sarah Chen',
-    email: 'sarah.chen@university.edu',
+    // lastName: 'Chen'
+    email: 'sarah.chen@usc.edu',
     role: 'ra',
     avatar: 'https://images.unsplash.com/photo-1494790108755-2616b9e0f97f?w=150&h=150&fit=crop&crop=face'
   },
   {
     id: '2',
     name: 'Brian Thompson',
-    email: 'brian.thompson@university.edu',
+    email: 'brian.thompson@usc.edu',
     role: 'full_admin',
     avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face'
   },
   {
     id: '3',
     name: 'Maria Rodriguez',
-    email: 'maria.rodriguez@university.edu',
+    email: 'maria.rodriguez@usc.edu',
     role: 'scheduling_admin',
     avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face'
   }
@@ -41,28 +43,62 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email || !password) {
-      toast.error('Please fill in all fields');
+      toast.error("Please fill in all fields");
       return;
     }
 
     setIsLoading(true);
 
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    if (email === 'brian.thompson@usc.edu'){
+      onLogin(mockUsers.at(1));
+      // toast.success(`Welcome back, ${data.name}!`);
+      navigate(`/profile`);
+    } else if (email === 'sarah.chen@usc.edu'){
+      onLogin(mockUsers.at(0))
+      navigate(`/profile`);
+    } else if (email === 'maria.rodriguez@usc.edu'){
+      onLogin(mockUsers.at(2))
+      navigate(`/profile`);
+    }
 
-    // Find user by email (in production, this would be a secure API call)
-    const user = mockUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
-    
-    if (user && password === 'password') { // In production, password would be properly hashed and verified
-      toast.success(`Welcome back, ${user.name}!`);
-      onLogin(user);
-    } else {
-      toast.error('Invalid email or password');
+    try {
+      //const navigate = useNavigate();
+      const response = await fetch("http://127.0.0.1:8000/api/login/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        toast.error(data.detail || "Invalid email or password");
+        setIsLoading(false);
+        return;
+      }
+
+      // Store JWT tokens
+      localStorage.setItem("access", data.tokens.access);
+      localStorage.setItem("refresh", data.tokens.refresh);
+
+      //console.log(localStorage.getItem("access"))
+      //console.log(localStorage.getItem("refresh"))
+
+      // navigate(`/profile`);
+      console.log(data.user.firstName)
+      onLogin(data.user);
+      toast.success(`Welcome back, ${data.user.firstName}!`);
+      navigate(`/profile`);
+    } catch (error) {
+      toast.error("Server unreachable. Try again later.");
     }
 
     setIsLoading(false);
@@ -145,9 +181,9 @@ export function LoginPage({ onLogin }: LoginPageProps) {
             Demo: Use any email from the system with password "password"
           </p>
           <div className="mt-2 text-xs text-gray-500 space-y-1">
-            <div>• brian.thompson@university.edu (Full Admin)</div>
-            <div>• maria.rodriguez@university.edu (Scheduling Admin)</div>
-            <div>• sarah.chen@university.edu (Research Assistant)</div>
+            <div>• brian.thompson@usc.edu (Full Admin)</div>
+            <div>• maria.rodriguez@usc.edu (Scheduling Admin)</div>
+            <div>• sarah.chen@usc.edu (Research Assistant)</div>
           </div>
         </div>
       </div>

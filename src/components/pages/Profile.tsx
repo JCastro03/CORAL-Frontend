@@ -24,7 +24,6 @@ import {
   Zap,
   RotateCcw
 } from 'lucide-react';
-import { toast } from 'sonner@2.0.3';
 import type { User } from '../utils/Users';
 import type { ScheduleConflict } from '../utils/scheduling-utils';
 import { autoAssignRA, checkScheduleConflict } from '../utils/scheduling-utils';
@@ -39,11 +38,16 @@ import { StudiesView } from '../views/StudiesView';
 import { ResearchAssistantsView } from '../views/ResearchAssistantsView';
 import { UsersView } from '../views/UsersView';
 
-export function Profile({ user, onLogout }) {
+export interface ProfileProps {
+  user: User;
+  onLogout: () => void;
+}
+
+export function Profile({ user, onLogout } : ProfileProps) {
   const tabs = roleTabs[user.role];  
   const [activeTab, setActiveTab] = useState(tabs[0].value);
 
-  const renderTab = (value, user) => {
+  const renderTab = ({value, user} : {value:String, user:User}) => {
     switch (value) {
         case "mystudies": return <MyStudiesView user={user} />;
         case "mycalendar": return <CalendarView user={user} filter="user" height={600} />
@@ -59,15 +63,15 @@ export function Profile({ user, onLogout }) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 px-6 py-4">
+    <header className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
         <div className="flex items-center gap-4">
             <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold">C</span>
+                <span className="text-white font-bold">C</span>
             </div>
             <div>
-            <h1 className="text-xl font-semibold">CORAL</h1>
-            <p className="text-sm text-gray-600">Dashboard</p>
+                <h1 className="text-xl font-semibold">CORAL</h1>
+                <p className="text-sm text-gray-600">Dashboard</p>
             </div>
         </div>
         <Button variant="outline" onClick={onLogout} className="gap-2">
@@ -105,7 +109,7 @@ export function Profile({ user, onLogout }) {
             
             {tabs.map((tab) => (
                 <TabsContent key={tab.value} value={tab.value}>
-                    {renderTab(tab.value, user)}
+                    {renderTab({ value: tab.value, user })}
                 </TabsContent>
             ))}
         </Tabs>

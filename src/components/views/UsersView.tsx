@@ -39,31 +39,62 @@ export function UsersView ({ user }: { user: User }) {
     const [ras, setRas] = useState<ResearchAssistant[]>(mockRAs)
     const [newUser, setNewUser] = useState({
         id: '',
-        name: '',
+        firstName: '',
+        lastName: '',
         email: '',
         role: 'ra' as 'ra' | 'scheduling_admin' | 'full_admin',
         tempPassword: ''
     });
 
-    const handleCreateUser = (e: React.FormEvent) => {
+    const handleCreateUser = async (e: React.FormEvent) => {
         e.preventDefault();
         
-        if (!newUser.name || !newUser.email) {
+        if (!newUser.firstName || !newUser.lastName || !newUser.email) {
           toast.error('Please fill in all required fields');
           return;
         }
     
-        console.log('Creating user:', newUser);
+        // console.log('Creating user:', newUser);
         
-        setNewUser({
-          id: '',
-          name: '',
-          email: '',
-          role: 'ra',
-          tempPassword: ''
-        });
-        setIsCreatingUser(false);
-        toast.success(`User account created for ${newUser.name}. They will receive login instructions via email.`);
+        // setNewUser({
+        //   id: '',
+        //   name: '',
+        //   email: '',
+        //   role: 'ra',
+        //   tempPassword: ''
+        // });
+        // setIsCreatingUser(false);
+
+        const newUserInformation = {
+          email: newUser.email,
+          password: "password",
+          first_name: newUser.firstName,
+          last_name: newUser.lastName,
+        }
+        console.log(newUserInformation)
+        try{
+          const registerUserResponse = await fetch("http://127.0.0.1:8000/api/register/", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(newUserInformation)
+          });
+
+          console.log(registerUserResponse);
+
+          const data = await registerUserResponse.json();
+
+          console.log(data)
+
+          
+        }catch(e:any){
+          console.log(e.response)
+        };
+
+        
+        
+        // toast.success(`User account created for ${newUser.name}. They will receive login instructions via email.`);
     };
 
 
@@ -93,12 +124,21 @@ export function UsersView ({ user }: { user: User }) {
                       <form onSubmit={handleCreateUser} className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <Label htmlFor="userName">Full Name *</Label>
+                            <Label htmlFor="userFirstName">First Name *</Label>
+                            <Input
+                              id="userFirstName"
+                              value={newUser.firstName}
+                              onChange={(e) => setNewUser(prev => ({ ...prev, firstName: e.target.value }))}
+                              placeholder="Enter first name"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="userLastName">Last Name *</Label>
                             <Input
                               id="userName"
-                              value={newUser.name}
-                              onChange={(e) => setNewUser(prev => ({ ...prev, name: e.target.value }))}
-                              placeholder="Enter full name"
+                              value={newUser.lastName}
+                              onChange={(e) => setNewUser(prev => ({ ...prev, lastName: e.target.value }))}
+                              placeholder="Enter last name"
                             />
                           </div>
                           <div className="space-y-2">
@@ -111,26 +151,27 @@ export function UsersView ({ user }: { user: User }) {
                               placeholder="ttrojan@usc.edu"
                             />
                           </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="userRole">Role</Label>
+                            <Select 
+                              value={newUser.role} 
+                              onValueChange={(value: typeof newUser.role) => 
+                                setNewUser(prev => ({ ...prev, role: value }))
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="ra">Research Assistant</SelectItem>
+                                <SelectItem value="scheduling_admin">Scheduling Administrator</SelectItem>
+                                <SelectItem value="full_admin">Full Administrator</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
 
-                        <div className="space-y-2">
-                          <Label htmlFor="userRole">Role</Label>
-                          <Select 
-                            value={newUser.role} 
-                            onValueChange={(value: typeof newUser.role) => 
-                              setNewUser(prev => ({ ...prev, role: value }))
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="ra">Research Assistant</SelectItem>
-                              <SelectItem value="scheduling_admin">Scheduling Administrator</SelectItem>
-                              <SelectItem value="full_admin">Full Administrator</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
+                        
 
                         <div className="bg-blue-50 p-4 rounded-lg">
                           <div className="flex items-start gap-2">
@@ -146,7 +187,11 @@ export function UsersView ({ user }: { user: User }) {
                         </div>
 
                         <div className="flex gap-2">
-                          <Button type="submit">Create Account</Button>
+                          <Button 
+                            type="submit"
+                          >
+                            Create Account
+                          </Button>
                           <Button 
                             type="button" 
                             variant="outline" 
