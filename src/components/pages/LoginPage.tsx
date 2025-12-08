@@ -42,33 +42,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
   const navigate = useNavigate();
-  // const handleSubmit = async (e: React.FormEvent) => {
-  //   e.preventDefault();
-    
-  //   if (!email || !password) {
-  //     toast.error('Please fill in all fields');
-  //     return;
-  //   }
-
-  //   setIsLoading(true);
-
-  //   // Simulate API call delay
-  //   await new Promise(resolve => setTimeout(resolve, 1000));
-
-  //   // Find user by email (in production, this would be a secure API call)
-  //   const user = mockUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
-    
-  //   if (user && password === 'password') { // In production, password would be properly hashed and verified
-  //     toast.success(`Welcome back, ${user.name}!`);
-  //     onLogin(user);
-  //   } else {
-  //     toast.error('Invalid email or password');
-  //   }
-
-  //   setIsLoading(false);
-  // };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

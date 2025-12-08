@@ -63,15 +63,15 @@ export function Profile({ user, onLogout } : ProfileProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 px-6 py-4">
+    <header className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
         <div className="flex items-center gap-4">
             <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold">C</span>
+                <span className="text-white font-bold">C</span>
             </div>
             <div>
-            <h1 className="text-xl font-semibold">CORAL</h1>
-            <p className="text-sm text-gray-600">Dashboard</p>
+                <h1 className="text-xl font-semibold">CORAL</h1>
+                <p className="text-sm text-gray-600">Dashboard</p>
             </div>
         </div>
         <Button variant="outline" onClick={onLogout} className="gap-2">
