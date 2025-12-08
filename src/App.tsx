@@ -10,6 +10,7 @@ export default function App () {
   const [currentUser, setCurrentUser] = useState<User |null>(null);
 
   const handleLogin = (user: User) => {
+    console.log(user)
     setCurrentUser(user);
   };
 

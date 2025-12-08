@@ -17,21 +17,22 @@ const mockUsers: User[] = [
   {
     id: '1',
     name: 'Sarah Chen',
-    email: 'sarah.chen@university.edu',
+    // lastName: 'Chen'
+    email: 'sarah.chen@usc.edu',
     role: 'ra',
     avatar: 'https://images.unsplash.com/photo-1494790108755-2616b9e0f97f?w=150&h=150&fit=crop&crop=face'
   },
   {
     id: '2',
     name: 'Brian Thompson',
-    email: 'brian.thompson@university.edu',
+    email: 'brian.thompson@usc.edu',
     role: 'full_admin',
     avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face'
   },
   {
     id: '3',
     name: 'Maria Rodriguez',
-    email: 'maria.rodriguez@university.edu',
+    email: 'maria.rodriguez@usc.edu',
     role: 'scheduling_admin',
     avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face'
   }
@@ -53,6 +54,18 @@ export function LoginPage({ onLogin }: LoginPageProps) {
     }
 
     setIsLoading(true);
+
+    if (email === 'brian.thompson@usc.edu'){
+      onLogin(mockUsers.at(1));
+      // toast.success(`Welcome back, ${data.name}!`);
+      navigate(`/profile`);
+    } else if (email === 'sarah.chen@usc.edu'){
+      onLogin(mockUsers.at(0))
+      navigate(`/profile`);
+    } else if (email === 'maria.rodriguez@usc.edu'){
+      onLogin(mockUsers.at(2))
+      navigate(`/profile`);
+    }
 
     try {
       //const navigate = useNavigate();
@@ -76,10 +89,11 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       localStorage.setItem("access", data.tokens.access);
       localStorage.setItem("refresh", data.tokens.refresh);
 
-      console.log(localStorage.getItem("access"))
-      console.log(localStorage.getItem("refresh"))
+      //console.log(localStorage.getItem("access"))
+      //console.log(localStorage.getItem("refresh"))
 
       // navigate(`/profile`);
+      console.log(data.user.firstName)
       onLogin(data.user);
       toast.success(`Welcome back, ${data.user.firstName}!`);
       navigate(`/profile`);
@@ -167,9 +181,9 @@ export function LoginPage({ onLogin }: LoginPageProps) {
             Demo: Use any email from the system with password "password"
           </p>
           <div className="mt-2 text-xs text-gray-500 space-y-1">
-            <div>• brian.thompson@university.edu (Full Admin)</div>
-            <div>• maria.rodriguez@university.edu (Scheduling Admin)</div>
-            <div>• sarah.chen@university.edu (Research Assistant)</div>
+            <div>• brian.thompson@usc.edu (Full Admin)</div>
+            <div>• maria.rodriguez@usc.edu (Scheduling Admin)</div>
+            <div>• sarah.chen@usc.edu (Research Assistant)</div>
           </div>
         </div>
       </div>
